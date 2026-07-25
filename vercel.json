@@ -1,8 +1,7 @@
 {
-  "public": "dist",
-  "routes": [
-    { "src": "^/$", "dest": "/home.html" },
-    { "src": "/assets/.*", "dest": "/assets/$1" },
-    { "src": "/.*", "dest": "/$1" }
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "rewrites": [
+    { "source": "/", "destination": "/home.html" }
   ]
 }
