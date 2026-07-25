@@ -30,16 +30,18 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
     const { plan } = await req.json();
-    const priceEnvVar = PRICE_ENV_BY_PLAN[plan];
-    if (!priceEnvVar) return json({ error: "plan must be one of: starter (Solo), growth (Team), pro (Fleet)" }, 400);
-    const priceId = Deno.env.get(priceEnvVar);
-    if (!priceId) return json({ error: `Billing isn't fully set up: ${priceEnvVar} isn't configured.` }, 500);
+    if (!PRICE_ENV_BY_PLAN[plan]) return json({ error: "plan must be one of: starter (Solo), growth (Team), pro (Fleet)" }, 400);
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } } }
     );
+
+    // Price id from plans.stripe_price_id (migration 071), env fallback.
+    const { data: planRow } = await supabase.from("plans").select("stripe_price_id").eq("key", plan).maybeSingle();
+    const priceId = planRow?.stripe_price_id || Deno.env.get(PRICE_ENV_BY_PLAN[plan]);
+    if (!priceId) return json({ error: "Billing isn't fully set up: no Stripe price configured for this plan." }, 500);
 
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) return json({ error: "unauthorized" }, 401);

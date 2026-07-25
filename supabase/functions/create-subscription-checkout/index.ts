@@ -38,13 +38,7 @@ Deno.serve(async (req) => {
 
   try {
     const { plan } = await req.json();
-    const priceEnvVar = PRICE_ENV_BY_PLAN[plan];
-    if (!priceEnvVar) return json({ error: "plan must be one of: starter (Solo), growth (Team), pro (Fleet)" }, 400);
-
-    const priceId = Deno.env.get(priceEnvVar);
-    if (!priceId) {
-      return json({ error: `Billing isn't fully set up yet: ${priceEnvVar} hasn't been configured. Your workspace was still created - see AUTH.md to finish Stripe setup.` }, 500);
-    }
+    if (!PRICE_ENV_BY_PLAN[plan]) return json({ error: "plan must be one of: starter (Solo), growth (Team), pro (Fleet)" }, 400);
 
     // RLS-scoped client acting as the caller (their JWT is forwarded), so
     // this can only ever read/act on the caller's own company - same
@@ -54,6 +48,14 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } } }
     );
+
+    // Stripe Price id: prefer plans.stripe_price_id (DB is the source of
+    // truth, set by migration 071), fall back to the STRIPE_PRICE_* env var.
+    const { data: planRow } = await supabase.from("plans").select("stripe_price_id").eq("key", plan).maybeSingle();
+    const priceId = planRow?.stripe_price_id || Deno.env.get(PRICE_ENV_BY_PLAN[plan]);
+    if (!priceId) {
+      return json({ error: "Billing isn't fully set up yet: no Stripe price configured for this plan. Your workspace was still created." }, 500);
+    }
 
     const {
       data: { user },
