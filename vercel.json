@@ -1,5 +1,8 @@
 {
-  "rewrites": [
-    { "source": "/", "destination": "/home.html" }
+  "public": "dist",
+  "routes": [
+    { "src": "^/$", "dest": "/home.html" },
+    { "src": "/assets/.*", "dest": "/assets/$1" },
+    { "src": "/.*", "dest": "/$1" }
   ]
 }
