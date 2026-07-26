@@ -14,8 +14,20 @@ OUT = {
     "WF5": "wf5-nurture-reactivation.json",
     "WF6": "wf6-weather-staffing-alert.json",
     "WF7": "wf7-billing-lifecycle.json",
+    "WF8a": "wf8a-payment-retry-poller.json",
+    "WF8b": "wf8b-payment-failed-entry.json",
+    "WF9": "wf9-usage-drop-alert.json",
+    "WF10": "wf10-seat-limit-upsell.json",
     "Website": "wf0-website-lead-capture.json",
 }
+
+# Our plan keys are starter/growth/pro; the workflows hardcoded the marketing
+# names. Left unfixed, WF10's seat check never matches and nobody is nudged.
+PLAN_KEY_FIXES = [("'solo'", "'starter'"), ("'team'", "'growth'"), ("'fleet'", "'pro'")]
+PLAN_LABEL_JS = (
+    "const planLabel = ({ starter: 'Solo', growth: 'Team', pro: 'Fleet' })"
+    "[item.plan] || item.plan;"
+)
 
 # companies column renames: idealised -> real
 COMPANY_COLS = {
@@ -23,6 +35,7 @@ COMPANY_COLS = {
     "owner_email": "contact_email",
     "google_review_url": "google_review_link",
     "service_type": "trade",          # WF6 reads the company's trade
+    "email": "contact_email",         # WF8a/WF8b fall back to company.email
 }
 
 # Receivers that definitely hold a raw `companies` row. Anything else
@@ -248,6 +261,30 @@ def adapt(path):
         d = drop_nodes(d, WF3_REVIEW_BRANCH)
 
     for n in d["nodes"]:
+        p = n.get("parameters", {})
+
+        # WF8a suspends after the 4th failed attempt. companies.status has a
+        # fixed vocabulary; reuse 'suspended' rather than inventing a third
+        # suspension state - the reason is already in payment_failure_log.
+        if p.get("tableId") == "companies":
+            for fv in p.get("fieldsUi", {}).get("fieldValues", []):
+                if fv["fieldId"] == "status" and fv["fieldValue"] == "suspended-for-payment":
+                    fv["fieldValue"] = "suspended"
+
+        # WF10 reads company.plan, which lives on subscriptions, not companies.
+        if name.startswith("WF10") and n["name"] == "Get Company":
+            p["tableId"] = "companies_with_billing"
+
+        if name.startswith("WF10") and "jsCode" in p:
+            if n["name"] == "Evaluate Nudge":
+                for old, new in PLAN_KEY_FIXES:
+                    p["jsCode"] = p["jsCode"].replace(old, new)
+            if n["name"] == "Build Upsell Email":
+                p["jsCode"] = re.sub(
+                    r"const planLabel = .*?;", PLAN_LABEL_JS, p["jsCode"], count=1
+                )
+
+    for n in d["nodes"]:
         if n["type"] == "n8n-nodes-base.sendGrid":
             sendgrid_to_resend(n)
 
@@ -260,7 +297,10 @@ for path in sorted(glob.glob(os.path.join(SRC, "*.json"))):
     if "WF" not in base and "Website" not in base:
         continue
     name, d = adapt(path)
-    key = next((k for k in OUT if name.startswith(k)), None)
+    # Longest prefix wins: "WF10: ..." also startswith "WF1".
+    key = next(
+        (k for k in sorted(OUT, key=len, reverse=True) if name.startswith(k)), None
+    )
     if not key:
         print("!! no output name for", name, file=sys.stderr)
         continue

@@ -1,0 +1,581 @@
+{
+  "name": "WF9: Weekly Usage-Drop Alert",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "id": "f9ef8783-7bd5-4944-94cb-e599bc06599d",
+      "name": "Every Monday 08:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        272
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "t1",
+              "name": "drop_threshold_pct",
+              "type": "number",
+              "value": 40
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8676979e-e804-4dae-969b-30d16613947d",
+      "name": "Set Threshold",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        224,
+        272
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "companies",
+        "returnAll": true,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "active"
+            }
+          ]
+        }
+      },
+      "id": "bc5d2a9a-bbab-4707-b4c9-2824a36e3e1c",
+      "name": "Get Active Companies",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        448,
+        272
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "usage_weekly",
+        "limit": 5,
+        "orderBy": "week_start.desc",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "company_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.id }}"
+            },
+            {
+              "keyName": "week_start",
+              "condition": "gte",
+              "keyValue": "={{ $now.minus({ weeks: 5 }).toFormat(\"yyyy-MM-dd\") }}"
+            }
+          ]
+        }
+      },
+      "id": "a199547a-5dfc-44cf-adea-2b2b7a54ebec",
+      "name": "Get Usage Weekly",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        896,
+        0
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const allRows = $input.all().map(function(i) { return i.json; }).filter(function(r) { return !!r.week_start; });\nconst company = $('Batch Companies').first().json;\nconst threshold = ($('Set Threshold').first().json.drop_threshold_pct) || 40;\nconst alertLog = company.usage_drop_alert_log || null;\n\nif (allRows.length < 5) {\n  return [{ json: {\n    company_id: company.id,\n    company_name: company.name,\n    should_skip: true,\n    drop_pct: 0,\n    avg_calls: 0,\n    avg_jobs: 0,\n    this_week_calls: 0,\n    this_week_jobs: 0,\n    current_week_start: '',\n    usage_drop_alert_log: alertLog,\n    threshold: threshold,\n  }}];\n}\n\nconst current = allRows[0];\nconst prior = allRows.slice(1, 5);\nvar sumCalls = 0;\nvar sumJobs = 0;\nfor (var pi = 0; pi < prior.length; pi++) {\n  sumCalls += (prior[pi].call_count || 0);\n  sumJobs += (prior[pi].job_count || 0);\n}\nconst avg_calls = sumCalls / 4;\nconst avg_jobs = sumJobs / 4;\nconst this_week_calls = current.call_count || 0;\nconst this_week_jobs = current.job_count || 0;\nconst call_drop_pct = avg_calls > 0 ? (avg_calls - this_week_calls) / avg_calls * 100 : 0;\nconst job_drop_pct = avg_jobs > 0 ? (avg_jobs - this_week_jobs) / avg_jobs * 100 : 0;\nconst drop_pct = call_drop_pct > job_drop_pct ? call_drop_pct : job_drop_pct;\n\nreturn [{ json: {\n  company_id: company.id,\n  company_name: company.name,\n  should_skip: false,\n  drop_pct: drop_pct,\n  avg_calls: avg_calls,\n  avg_jobs: avg_jobs,\n  this_week_calls: this_week_calls,\n  this_week_jobs: this_week_jobs,\n  current_week_start: current.week_start,\n  usage_drop_alert_log: alertLog,\n  threshold: threshold,\n}}];"
+      },
+      "id": "1ef72437-dd97-4d70-84c8-b8ea79185a67",
+      "name": "Compute Stats",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c_skip",
+              "leftValue": "={{ $json.should_skip }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "7daf546f-86d9-4d6b-8870-4c1ca7b530f8",
+      "name": "Skip? (< 4 Weeks History)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1344,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "805cd57b-fdcb-4ec9-9e39-740716e0b55f",
+      "name": "Batch Companies",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        672,
+        272
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c_thresh",
+              "leftValue": "={{ $json.drop_pct }}",
+              "rightValue": "={{ $json.threshold }}",
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "ec4a733c-30c7-4259-aa1f-85d87ffa1d28",
+      "name": "Drop >= Threshold?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1568,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst alertLog = item.usage_drop_alert_log;\nconst drop_pct = item.drop_pct;\nconst shouldAlert = (function() {\n  if (!alertLog || !alertLog.last_alerted_week) { return true; }\n  const lastDate = new Date(alertLog.last_alerted_week);\n  const now = new Date();\n  const daysDiff = (now.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24);\n  if (daysDiff < 14 && drop_pct <= (alertLog.last_alerted_drop || 0)) { return false; }\n  return true;\n})();\nreturn [{ json: {\n  company_id: item.company_id,\n  company_name: item.company_name,\n  should_alert: shouldAlert,\n  drop_pct: drop_pct,\n  avg_calls: item.avg_calls,\n  avg_jobs: item.avg_jobs,\n  this_week_calls: item.this_week_calls,\n  this_week_jobs: item.this_week_jobs,\n  current_week_start: item.current_week_start,\n  threshold: item.threshold,\n}}];"
+      },
+      "id": "ef4cb7b9-b653-4b97-ab00-3af463ca3740",
+      "name": "Suppression Check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1792,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c_alert",
+              "leftValue": "={{ $json.should_alert }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "4ddd7865-1a81-4cb3-8c9c-b4902730c467",
+      "name": "Should Alert?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2016,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst avgCalls = Math.round(item.avg_calls);\nconst avgJobs = Math.round(item.avg_jobs);\nconst dropPct = Math.round(item.drop_pct);\nconst LF = String.fromCharCode(10);\n\nconst emailBody = 'Company: ' + item.company_name + LF + LF +\n  'Normal weekly average:' + LF +\n  '  Calls: ' + avgCalls + LF +\n  '  Jobs: ' + avgJobs + LF + LF +\n  'This week actual:' + LF +\n  '  Calls: ' + item.this_week_calls + LF +\n  '  Jobs: ' + item.this_week_jobs + LF + LF +\n  'Drop: ' + dropPct + '% below their normal pattern.' + LF + LF +\n  'Suggestion: Consider a personal check-in with ' + item.company_name + ' \u2014 this may signal dissatisfaction or a business problem on their end, worth a human phone call.';\n\nconst slackText = '*Usage drop alert: ' + item.company_name + '*' + LF +\n  'Normal avg: ' + avgCalls + ' calls / ' + avgJobs + ' jobs per week' + LF +\n  'This week: ' + item.this_week_calls + ' calls / ' + item.this_week_jobs + ' jobs' + LF +\n  'Drop: ' + dropPct + '% below normal' + LF +\n  'Consider a personal check-in \u2014 worth a human phone call.';\n\nreturn [{ json: {\n  company_id: item.company_id,\n  company_name: item.company_name,\n  email_subject: 'Usage drop alert: ' + item.company_name,\n  email_body: emailBody,\n  slack_text: slackText,\n  drop_pct: item.drop_pct,\n  current_week_start: item.current_week_start,\n}}];"
+      },
+      "id": "eb5bd69f-75af-4732-ace8-aeb53c4d4945",
+      "name": "Build Alert Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2240,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "from",
+              "value": "<__PLACEHOLDER_VALUE__Your Platform Name__> <__PLACEHOLDER_VALUE__Resend From header, e.g. Sable <alerts@runsable.com>__>"
+            },
+            {
+              "name": "to",
+              "value": "<__PLACEHOLDER_VALUE__owner-alert-email@yourdomain.com__>"
+            },
+            {
+              "name": "subject",
+              "value": "={{ $json.email_subject }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.email_body }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "14c327a0-5de3-42ad-8631-b796eb3f4395",
+      "name": "Send Owner Alert Email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2464,
+        80
+      ],
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "Resend"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultName": "Select usage-drop alert channel"
+        },
+        "text": "={{ $('Build Alert Message').item.json.slack_text }}",
+        "otherOptions": {}
+      },
+      "id": "dfa8bd1b-b54e-4305-a8df-cb6f5bd103d3",
+      "name": "Send Slack Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        2688,
+        80
+      ],
+      "webhookId": "08cd3304-e612-491a-bd69-ac153486b6e4",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $('Build Alert Message').first().json;\nconst newLog = {\n  last_alerted_week: item.current_week_start,\n  last_alerted_drop: item.drop_pct,\n  alert_sent_at: new Date().toISOString(),\n};\nreturn [{ json: {\n  company_id: item.company_id,\n  usage_drop_alert_log_json: JSON.stringify(newLog),\n}}];"
+      },
+      "id": "272e30d0-1051-4333-ae92-720fc463fb13",
+      "name": "Build Log Update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2912,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "companies",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.company_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "usage_drop_alert_log",
+              "fieldValue": "={{ $json.usage_drop_alert_log_json }}"
+            }
+          ]
+        }
+      },
+      "id": "eb5b7a23-4a67-4766-951d-e1663297a491",
+      "name": "Update Company Alert Log",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        3136,
+        144
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Every Monday 08:00": {
+      "main": [
+        [
+          {
+            "node": "Set Threshold",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Threshold": {
+      "main": [
+        [
+          {
+            "node": "Get Active Companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Active Companies": {
+      "main": [
+        [
+          {
+            "node": "Batch Companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Usage Weekly": {
+      "main": [
+        [
+          {
+            "node": "Compute Stats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute Stats": {
+      "main": [
+        [
+          {
+            "node": "Skip? (< 4 Weeks History)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Skip? (< 4 Weeks History)": {
+      "main": [
+        [
+          {
+            "node": "Batch Companies",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Drop >= Threshold?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Batch Companies": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Get Usage Weekly",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Drop >= Threshold?": {
+      "main": [
+        [
+          {
+            "node": "Suppression Check",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Batch Companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Suppression Check": {
+      "main": [
+        [
+          {
+            "node": "Should Alert?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Should Alert?": {
+      "main": [
+        [
+          {
+            "node": "Build Alert Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Batch Companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Alert Message": {
+      "main": [
+        [
+          {
+            "node": "Send Owner Alert Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Owner Alert Email": {
+      "main": [
+        [
+          {
+            "node": "Send Slack Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Slack Alert": {
+      "main": [
+        [
+          {
+            "node": "Build Log Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Log Update": {
+      "main": [
+        [
+          {
+            "node": "Update Company Alert Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Company Alert Log": {
+      "main": [
+        [
+          {
+            "node": "Batch Companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "fa1de6c7-c37a-4ae2-b157-f2d0a80608df",
+  "meta": {
+    "instanceId": "1f898378341ccb341e91602af9fe7508a6860290fcee6f09244305e2b8d071a0"
+  },
+  "nodeGroups": [],
+  "id": "VQCVUZ9NNcUPmlLu",
+  "tags": []
+}

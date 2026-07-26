@@ -1,0 +1,1545 @@
+{
+  "name": "WF8a: Payment Retry Poller (7-Day Dunning)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      },
+      "id": "813677da-967a-4f00-9b72-403601a71453",
+      "name": "Every 6 Hours",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        736
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "payment_retry_queue",
+        "returnAll": true,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "pending"
+            },
+            {
+              "keyName": "next_retry_at",
+              "condition": "lte",
+              "keyValue": "={{ $now.toISO() }}"
+            }
+          ]
+        }
+      },
+      "id": "c015e363-d223-409c-9273-c2726ac13a13",
+      "name": "Get Pending Queue",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        224,
+        736
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "companies",
+        "returnAll": true,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.company_id }}"
+            }
+          ]
+        }
+      },
+      "id": "3f7224e3-c777-4c12-82c1-8b3bb2142e90",
+      "name": "Get Company",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        672,
+        96
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const company = $input.first().json;\nconst queue = $('Batch Queue Rows').first().json;\n\nconst companyFound = !!(company && company.id);\nconst companyActive = companyFound && company.status === 'active';\n\nlet route = 2;\nif (!companyFound) { route = 0; }\nelse if (companyActive) { route = 1; }\n\nconst existingLog = (companyFound && Array.isArray(company.payment_failure_log))\n  ? company.payment_failure_log : [];\n\nconst attempt = queue.attempt_number || 1;\n\nreturn [{\n  json: {\n    queue_row_id: queue.id || '',\n    invoice_id: queue.invoice_id || '',\n    company_id: queue.company_id || '',\n    customer_email: queue.customer_email || company.contact_email || '',\n    amount_due: queue.amount_due || 0,\n    attempt_number: attempt,\n    company_found: companyFound,\n    company_active: companyActive,\n    company_status: company.status || '',\n    existing_failure_log: existingLog,\n    route: route,\n  }\n}];"
+      },
+      "id": "06d891b3-0b02-4e5f-b17e-3f47a29730a0",
+      "name": "Evaluate Company",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        896,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 3,
+        "output": "={{ $json.route }}"
+      },
+      "id": "34f3b77d-2801-45d2-8fb2-96cda9045e56",
+      "name": "Route Check",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        1120,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "payment_retry_queue",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.queue_row_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "error-no-company"
+            }
+          ]
+        }
+      },
+      "id": "b4ddaf8c-e0ef-482b-8058-e1355a9ca240",
+      "name": "Mark: No Company",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1344,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "d9783350-f55e-4bea-924b-f790f7d23110",
+      "name": "Batch Queue Rows",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        448,
+        736
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const bundle = $input.first().json;\nconst existingLog = Array.isArray(bundle.existing_failure_log) ? bundle.existing_failure_log : [];\nconst entry = { event: 'auto_resolved', invoice_id: bundle.invoice_id, timestamp: new Date().toISOString() };\nreturn [{\n  json: {\n    company_id: bundle.company_id,\n    queue_row_id: bundle.queue_row_id,\n    payment_failure_log_json: JSON.stringify(existingLog.concat([entry])),\n  }\n}];"
+      },
+      "id": "4a146c1b-bb7f-40ae-aa51-f41db2c647c6",
+      "name": "Build Auto Log",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1344,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "payment_retry_queue",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.queue_row_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "resolved_paid"
+            }
+          ]
+        }
+      },
+      "id": "69f99b51-5bf9-4868-9d27-541c4982e8bf",
+      "name": "Mark Auto Resolved",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1568,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "companies",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Build Auto Log').item.json.company_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "payment_failure_log",
+              "fieldValue": "={{ $('Build Auto Log').item.json.payment_failure_log_json }}"
+            }
+          ]
+        }
+      },
+      "id": "959d358c-fe78-4b4a-8c06-995f81be02d0",
+      "name": "Update Company: Auto Resolved",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1792,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.attempt_number }}",
+              "rightValue": 4,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "401a8796-02bc-445b-88e3-2bd39e313201",
+      "name": "Attempt >= 4?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1344,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "payment_retry_queue",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.queue_row_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "error-stale"
+            }
+          ]
+        }
+      },
+      "id": "6893c75d-f314-4352-9c2f-f317fa35ea43",
+      "name": "Mark Error Stale",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1568,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ \"https://api.stripe.com/v1/invoices/\" + $json.invoice_id + \"/pay\" }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "stripeApi",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "ec63c3a4-65fd-4cf0-bc1e-93c76b053975",
+      "name": "Stripe Retry Invoice",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1568,
+        576
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $input.first().json;\nconst bundle = $('Evaluate Company').item.json;\n\nconst statusCode = resp.statusCode || 0;\nconst body = resp.body || {};\n\nlet result_type = 'failed';\nif (statusCode === 200) {\n  const piStatus = (body.payment_intent && body.payment_intent.status) || '';\n  result_type = piStatus === 'requires_action' ? '3ds' : 'success';\n}\n\nconst resultRouteMap = { success: 0, '3ds': 1, failed: 2 };\nconst result_route = (resultRouteMap[result_type] !== undefined) ? resultRouteMap[result_type] : 2;\n\nconst attempt = bundle.attempt_number || 1;\nconst fail_route = Math.min(attempt - 1, 2);\nconst next_attempt = attempt + 1;\n\nreturn [{\n  json: {\n    queue_row_id: bundle.queue_row_id,\n    invoice_id: bundle.invoice_id,\n    company_id: bundle.company_id,\n    customer_email: bundle.customer_email,\n    amount_due: bundle.amount_due,\n    attempt_number: attempt,\n    existing_failure_log: bundle.existing_failure_log,\n    stripe_status_code: statusCode,\n    result_type: result_type,\n    result_route: result_route,\n    fail_route: fail_route,\n    next_attempt: next_attempt,\n  }\n}];"
+      },
+      "id": "e690f2e0-9f58-4d95-b574-5363cbb4ca39",
+      "name": "Evaluate Stripe",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1792,
+        576
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 3,
+        "output": "={{ $json.result_route }}"
+      },
+      "id": "caad71a4-675a-446c-90a2-439009069a4e",
+      "name": "Result Router",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        2016,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "from",
+              "value": "<__PLACEHOLDER_VALUE__Your Platform Name__> <__PLACEHOLDER_VALUE__Resend From header, e.g. Sable <alerts@runsable.com>__>"
+            },
+            {
+              "name": "to",
+              "value": "={{ $json.customer_email }}"
+            },
+            {
+              "name": "subject",
+              "value": "You're all set \u2014 payment confirmed"
+            },
+            {
+              "name": "text",
+              "value": "Great news! Your payment has been processed successfully and your account is fully active. Thank you for resolving this."
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "854c131d-f84c-4990-a3a4-5521fd33d01a",
+      "name": "Send Success Email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2240,
+        192
+      ],
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "Resend"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "payment_retry_queue",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Evaluate Stripe').item.json.queue_row_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "resolved_paid"
+            },
+            {
+              "fieldId": "attempt_number",
+              "fieldValue": "={{ $('Evaluate Stripe').item.json.attempt_number }}"
+            }
+          ]
+        }
+      },
+      "id": "e3ce7af5-5dba-4f11-b325-09d83fec1e92",
+      "name": "Mark Queue Resolved",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2464,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const bundle = $('Evaluate Stripe').item.json;\nconst existingLog = Array.isArray(bundle.existing_failure_log) ? bundle.existing_failure_log : [];\nconst entry = { event: 'retry_success', invoice_id: bundle.invoice_id, attempt: bundle.attempt_number, timestamp: new Date().toISOString() };\nreturn [{ json: { company_id: bundle.company_id, payment_failure_log_json: JSON.stringify(existingLog.concat([entry])) } }];"
+      },
+      "id": "3fa04b04-fc8e-489a-bd9d-d279934fbf79",
+      "name": "Build Success Log",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2688,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "companies",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.company_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "payment_failure_log",
+              "fieldValue": "={{ $json.payment_failure_log_json }}"
+            }
+          ]
+        }
+      },
+      "id": "f25202c2-bffa-4b04-a481-51a394659fa1",
+      "name": "Update Company: Success",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2912,
+        272
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "from",
+              "value": "<__PLACEHOLDER_VALUE__Your Platform Name__> <__PLACEHOLDER_VALUE__Resend From header, e.g. Sable <alerts@runsable.com>__>"
+            },
+            {
+              "name": "to",
+              "value": "={{ $json.customer_email }}"
+            },
+            {
+              "name": "subject",
+              "value": "Action required: Complete your payment authentication"
+            },
+            {
+              "name": "text",
+              "value": "Your bank requires additional verification to process your payment. Please complete the authentication step in your banking app. Once complete, your payment will be retried automatically."
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "41ccb7b1-3546-45ab-9e38-e8780067a030",
+      "name": "Send 3DS Email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2240,
+        384
+      ],
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "Resend"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "payment_retry_queue",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Evaluate Stripe').item.json.queue_row_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "attempt_number",
+              "fieldValue": "={{ $('Evaluate Stripe').item.json.next_attempt }}"
+            },
+            {
+              "fieldId": "next_retry_at",
+              "fieldValue": "={{ $now.plus({ days: 3 }).toISO() }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "pending"
+            }
+          ]
+        }
+      },
+      "id": "865b3793-4362-4fc7-a7d2-3697dae68328",
+      "name": "Advance: 3DS",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2464,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const bundle = $('Evaluate Stripe').item.json;\nconst existingLog = Array.isArray(bundle.existing_failure_log) ? bundle.existing_failure_log : [];\nconst entry = { event: '3ds_required', invoice_id: bundle.invoice_id, attempt: bundle.attempt_number, timestamp: new Date().toISOString() };\nreturn [{ json: { company_id: bundle.company_id, payment_failure_log_json: JSON.stringify(existingLog.concat([entry])) } }];"
+      },
+      "id": "37da32b1-9aa0-4993-95a7-30810edededb",
+      "name": "Build 3DS Log",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2688,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "companies",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.company_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "payment_failure_log",
+              "fieldValue": "={{ $json.payment_failure_log_json }}"
+            }
+          ]
+        }
+      },
+      "id": "ae05d157-c6f9-4d30-aa16-8f5d440047bb",
+      "name": "Update Company: 3DS",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2912,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "expression",
+        "numberOutputs": 3,
+        "output": "={{ $json.fail_route }}"
+      },
+      "id": "dbddd2fc-8ba7-493e-8c74-0015aab308d3",
+      "name": "Failure Router",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        2240,
+        848
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "from",
+              "value": "<__PLACEHOLDER_VALUE__Your Platform Name__> <__PLACEHOLDER_VALUE__Resend From header, e.g. Sable <alerts@runsable.com>__>"
+            },
+            {
+              "name": "to",
+              "value": "={{ $json.customer_email }}"
+            },
+            {
+              "name": "subject",
+              "value": "Second notice: Payment still failed"
+            },
+            {
+              "name": "text",
+              "value": "We tried again but could not process your payment. Please update your payment details in your account to avoid suspension. If you need help, contact support."
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "78abfd95-e63e-48c6-a007-9a46a00adcef",
+      "name": "Send Email 2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2464,
+        576
+      ],
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "Resend"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "payment_retry_queue",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Evaluate Stripe').item.json.queue_row_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "attempt_number",
+              "fieldValue": "2"
+            },
+            {
+              "fieldId": "next_retry_at",
+              "fieldValue": "={{ $now.plus({ days: 3 }).toISO() }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "pending"
+            }
+          ]
+        }
+      },
+      "id": "e34b4b54-c060-404a-bc6a-9cb822423c78",
+      "name": "Advance to Attempt 2",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2688,
+        576
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const bundle = $('Evaluate Stripe').item.json;\nconst existingLog = Array.isArray(bundle.existing_failure_log) ? bundle.existing_failure_log : [];\nconst entry = { event: 'retry_failed', invoice_id: bundle.invoice_id, attempt: 1, timestamp: new Date().toISOString() };\nreturn [{ json: { company_id: bundle.company_id, payment_failure_log_json: JSON.stringify(existingLog.concat([entry])) } }];"
+      },
+      "id": "ff5b4074-d91e-4cff-bbf6-ea4cc6712b88",
+      "name": "Build Fail Log 1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2912,
+        656
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "companies",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.company_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "payment_failure_log",
+              "fieldValue": "={{ $json.payment_failure_log_json }}"
+            }
+          ]
+        }
+      },
+      "id": "b00cb7f1-ec2a-4c20-994f-b0f96c18704f",
+      "name": "Update Company: Fail 1",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        3136,
+        880
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "from",
+              "value": "<__PLACEHOLDER_VALUE__Your Platform Name__> <__PLACEHOLDER_VALUE__Resend From header, e.g. Sable <alerts@runsable.com>__>"
+            },
+            {
+              "name": "to",
+              "value": "={{ $json.customer_email }}"
+            },
+            {
+              "name": "subject",
+              "value": "Urgent: Account suspension in 3 days"
+            },
+            {
+              "name": "text",
+              "value": "Your payment is still outstanding. Your account will be suspended in 3 days if not resolved. Please update your payment method immediately to keep your service active."
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "9bb764f3-104b-4a0e-8d3d-182c61e81af1",
+      "name": "Send Email 3",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2464,
+        768
+      ],
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "Resend"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "payment_retry_queue",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Evaluate Stripe').item.json.queue_row_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "attempt_number",
+              "fieldValue": "3"
+            },
+            {
+              "fieldId": "next_retry_at",
+              "fieldValue": "={{ $now.plus({ days: 3 }).toISO() }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "pending"
+            }
+          ]
+        }
+      },
+      "id": "21c15088-00a7-4d95-ba7d-02efe8a3ca8a",
+      "name": "Advance to Attempt 3",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2688,
+        768
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const bundle = $('Evaluate Stripe').item.json;\nconst existingLog = Array.isArray(bundle.existing_failure_log) ? bundle.existing_failure_log : [];\nconst entry = { event: 'retry_failed', invoice_id: bundle.invoice_id, attempt: 2, timestamp: new Date().toISOString() };\nreturn [{ json: { company_id: bundle.company_id, payment_failure_log_json: JSON.stringify(existingLog.concat([entry])) } }];"
+      },
+      "id": "29979d73-96f3-4d6d-bd19-8d6012cdc9e9",
+      "name": "Build Fail Log 2",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2912,
+        848
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "companies",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.company_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "payment_failure_log",
+              "fieldValue": "={{ $json.payment_failure_log_json }}"
+            }
+          ]
+        }
+      },
+      "id": "04369040-05a9-41ec-810d-b1c8e8bdf617",
+      "name": "Update Company: Fail 2",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        3136,
+        1072
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "companies",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.company_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "suspended"
+            }
+          ]
+        }
+      },
+      "id": "e44f2889-e843-4e7a-8e75-a2c94c2e0e3e",
+      "name": "Suspend Company",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2464,
+        960
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "from",
+              "value": "<__PLACEHOLDER_VALUE__Your Platform Name__> <__PLACEHOLDER_VALUE__Resend From header, e.g. Sable <alerts@runsable.com>__>"
+            },
+            {
+              "name": "to",
+              "value": "={{ $('Evaluate Stripe').item.json.customer_email }}"
+            },
+            {
+              "name": "subject",
+              "value": "Your account has been suspended"
+            },
+            {
+              "name": "text",
+              "value": "Your account has been suspended due to non-payment. To reactivate, please update your payment method in your account dashboard and contact our support team."
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "4308a45d-7955-4abf-b809-ecda5adac48e",
+      "name": "Send Email 4: Suspended",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2688,
+        960
+      ],
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "Resend"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "payment_retry_queue",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Evaluate Stripe').item.json.queue_row_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "suspended"
+            },
+            {
+              "fieldId": "attempt_number",
+              "fieldValue": "4"
+            }
+          ]
+        }
+      },
+      "id": "b70ad494-a8aa-4e0c-b2f4-4364776e0c64",
+      "name": "Mark Queue Suspended",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2912,
+        1040
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const bundle = $('Evaluate Stripe').item.json;\nconst existingLog = Array.isArray(bundle.existing_failure_log) ? bundle.existing_failure_log : [];\nconst entry = { event: 'suspended', invoice_id: bundle.invoice_id, attempt: 3, timestamp: new Date().toISOString() };\nreturn [{ json: { company_id: bundle.company_id, payment_failure_log_json: JSON.stringify(existingLog.concat([entry])) } }];"
+      },
+      "id": "04f70746-f8c0-4c84-ac01-edfbec71d534",
+      "name": "Build Suspend Log",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3136,
+        1264
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "companies",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.company_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "payment_failure_log",
+              "fieldValue": "={{ $json.payment_failure_log_json }}"
+            }
+          ]
+        }
+      },
+      "id": "530ba160-1bc2-4e40-a453-da2afbbadd7f",
+      "name": "Update Company: Suspended",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        3360,
+        1488
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Every 6 Hours": {
+      "main": [
+        [
+          {
+            "node": "Get Pending Queue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Pending Queue": {
+      "main": [
+        [
+          {
+            "node": "Batch Queue Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Company": {
+      "main": [
+        [
+          {
+            "node": "Evaluate Company",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluate Company": {
+      "main": [
+        [
+          {
+            "node": "Route Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Check": {
+      "main": [
+        [
+          {
+            "node": "Mark: No Company",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Auto Log",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Attempt >= 4?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark: No Company": {
+      "main": [
+        [
+          {
+            "node": "Batch Queue Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Batch Queue Rows": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Get Company",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Auto Log": {
+      "main": [
+        [
+          {
+            "node": "Mark Auto Resolved",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Auto Resolved": {
+      "main": [
+        [
+          {
+            "node": "Update Company: Auto Resolved",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Company: Auto Resolved": {
+      "main": [
+        [
+          {
+            "node": "Batch Queue Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Attempt >= 4?": {
+      "main": [
+        [
+          {
+            "node": "Mark Error Stale",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stripe Retry Invoice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Error Stale": {
+      "main": [
+        [
+          {
+            "node": "Batch Queue Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stripe Retry Invoice": {
+      "main": [
+        [
+          {
+            "node": "Evaluate Stripe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluate Stripe": {
+      "main": [
+        [
+          {
+            "node": "Result Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Result Router": {
+      "main": [
+        [
+          {
+            "node": "Send Success Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send 3DS Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Failure Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Success Email": {
+      "main": [
+        [
+          {
+            "node": "Mark Queue Resolved",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Queue Resolved": {
+      "main": [
+        [
+          {
+            "node": "Build Success Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Success Log": {
+      "main": [
+        [
+          {
+            "node": "Update Company: Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Company: Success": {
+      "main": [
+        [
+          {
+            "node": "Batch Queue Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send 3DS Email": {
+      "main": [
+        [
+          {
+            "node": "Advance: 3DS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Advance: 3DS": {
+      "main": [
+        [
+          {
+            "node": "Build 3DS Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build 3DS Log": {
+      "main": [
+        [
+          {
+            "node": "Update Company: 3DS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Company: 3DS": {
+      "main": [
+        [
+          {
+            "node": "Batch Queue Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Failure Router": {
+      "main": [
+        [
+          {
+            "node": "Send Email 2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Email 3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Suspend Company",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email 2": {
+      "main": [
+        [
+          {
+            "node": "Advance to Attempt 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Advance to Attempt 2": {
+      "main": [
+        [
+          {
+            "node": "Build Fail Log 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Fail Log 1": {
+      "main": [
+        [
+          {
+            "node": "Update Company: Fail 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Company: Fail 1": {
+      "main": [
+        [
+          {
+            "node": "Batch Queue Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email 3": {
+      "main": [
+        [
+          {
+            "node": "Advance to Attempt 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Advance to Attempt 3": {
+      "main": [
+        [
+          {
+            "node": "Build Fail Log 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Fail Log 2": {
+      "main": [
+        [
+          {
+            "node": "Update Company: Fail 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Company: Fail 2": {
+      "main": [
+        [
+          {
+            "node": "Batch Queue Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Suspend Company": {
+      "main": [
+        [
+          {
+            "node": "Send Email 4: Suspended",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email 4: Suspended": {
+      "main": [
+        [
+          {
+            "node": "Mark Queue Suspended",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Queue Suspended": {
+      "main": [
+        [
+          {
+            "node": "Build Suspend Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Suspend Log": {
+      "main": [
+        [
+          {
+            "node": "Update Company: Suspended",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Company: Suspended": {
+      "main": [
+        [
+          {
+            "node": "Batch Queue Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "60fa8789-cb1a-4681-b936-7906abbb9427",
+  "meta": {
+    "instanceId": "1f898378341ccb341e91602af9fe7508a6860290fcee6f09244305e2b8d071a0"
+  },
+  "nodeGroups": [],
+  "id": "Xqh9OEHc7PcLm1yh",
+  "tags": []
+}
