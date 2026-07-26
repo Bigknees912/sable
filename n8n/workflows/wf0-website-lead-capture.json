@@ -1,0 +1,466 @@
+{
+  "name": "Website Lead Capture + 2-Day Follow-up",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Get a Free Demo of Sable",
+        "formDescription": "Tell us a bit about your business \u2014 we'll be in touch within 24 hours.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Business Name",
+              "fieldName": "business_name",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Your Name",
+              "fieldName": "contact_name",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Phone Number",
+              "fieldName": "phone",
+              "placeholder": "e.g. (720) 555-0100"
+            },
+            {
+              "fieldLabel": "Email Address",
+              "fieldType": "email",
+              "fieldName": "email",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Trade Type",
+              "fieldType": "dropdown",
+              "fieldName": "trade_type",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Plumbing"
+                  },
+                  {
+                    "option": "HVAC"
+                  },
+                  {
+                    "option": "Electrical"
+                  },
+                  {
+                    "option": "General Contracting"
+                  },
+                  {
+                    "option": "Other"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Number of trucks / technicians",
+              "fieldType": "number",
+              "fieldName": "team_size"
+            },
+            {
+              "fieldLabel": "What's your biggest scheduling or call-answering headache right now?",
+              "fieldType": "textarea",
+              "fieldName": "pain_point",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {
+          "appendAttribution": false,
+          "path": "sable-demo-request",
+          "respondWithOptions": {
+            "values": {
+              "formSubmittedText": "Thanks! We\u2019ll be in touch within 24 hours. \u2013 The Sable Team"
+            }
+          }
+        }
+      },
+      "id": "e73205bd-927e-4040-9e97-49c4c4553af4",
+      "name": "Website Lead Form",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.6,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "1538960f-eabf-4dbf-8d98-5f248fe254cf"
+    },
+    {
+      "parameters": {
+        "tableId": "marketing_leads",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "business_name",
+              "fieldValue": "={{ $json.business_name }}"
+            },
+            {
+              "fieldId": "contact_name",
+              "fieldValue": "={{ $json.contact_name }}"
+            },
+            {
+              "fieldId": "phone",
+              "fieldValue": "={{ $json.phone || '' }}"
+            },
+            {
+              "fieldId": "email",
+              "fieldValue": "={{ $json.email }}"
+            },
+            {
+              "fieldId": "trade_type",
+              "fieldValue": "={{ $json.trade_type }}"
+            },
+            {
+              "fieldId": "team_size",
+              "fieldValue": "={{ $json.team_size || '' }}"
+            },
+            {
+              "fieldId": "pain_point",
+              "fieldValue": "={{ $json.pain_point }}"
+            },
+            {
+              "fieldId": "source",
+              "fieldValue": "website_survey"
+            },
+            {
+              "fieldId": "pipeline_stage",
+              "fieldValue": "new_lead"
+            },
+            {
+              "fieldId": "follow_up_sent",
+              "fieldValue": "false"
+            }
+          ]
+        }
+      },
+      "id": "ec4a0bbd-fd4d-49fa-acc0-2b37d0bbe4c3",
+      "name": "Create Lead",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        224,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "lead_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "contact_name",
+              "value": "={{ $json.contact_name }}",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "business_name",
+              "value": "={{ $json.business_name }}",
+              "type": "string"
+            },
+            {
+              "id": "4",
+              "name": "email",
+              "value": "={{ $json.email }}",
+              "type": "string"
+            },
+            {
+              "id": "5",
+              "name": "phone",
+              "value": "={{ $json.phone || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "6",
+              "name": "trade_type",
+              "value": "={{ $json.trade_type }}",
+              "type": "string"
+            },
+            {
+              "id": "7",
+              "name": "team_size",
+              "value": "={{ $json.team_size || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "8",
+              "name": "pain_point",
+              "value": "={{ $json.pain_point }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5039a149-3288-4659-85d9-8415c2a81670",
+      "name": "Carry Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        448,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "mail",
+        "fromEmail": "<__PLACEHOLDER_VALUE__Sender email (e.g. leads@runsable.com)__>",
+        "fromName": "Sable Leads",
+        "toEmail": "<__PLACEHOLDER_VALUE__Your notification email address__>",
+        "subject": "=New demo request: {{ $json.business_name }} \u2014 {{ $json.trade_type }}",
+        "contentValue": "=New lead from your website!\n\nBusiness: {{ $json.business_name }}\nContact: {{ $json.contact_name }}\nPhone: {{ $json.phone }}\nEmail: {{ $json.email }}\nTrade: {{ $json.trade_type }}\nTeam size: {{ $json.team_size }} trucks/technicians\n\nPain point:\n\"{{ $json.pain_point }}\"\n\nSource: Website survey\n\n\u2013 Sable",
+        "additionalFields": {}
+      },
+      "id": "f9585ae1-3d95-4e3a-a832-643848dc8edc",
+      "name": "Notify Owner",
+      "type": "n8n-nodes-base.sendGrid",
+      "typeVersion": 1,
+      "position": [
+        672,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 2,
+        "unit": "days"
+      },
+      "id": "a53ff16f-36ff-4023-8c02-f0e5930fec8c",
+      "name": "Wait 2 Days",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        896,
+        0
+      ],
+      "webhookId": "43b5fd46-1b54-4407-af52-534792c08ee9"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "marketing_leads",
+        "limit": 1,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.lead_id }}"
+            }
+          ]
+        }
+      },
+      "id": "c79967e9-62f0-49a3-b171-e55a99fb6332",
+      "name": "Re-query Lead",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "stage_check",
+              "leftValue": "={{ $json.pipeline_stage }}",
+              "rightValue": "new_lead",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "63038284-63c8-4cd5-985e-666b9511b48a",
+      "name": "Still New Lead?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1344,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "mail",
+        "fromEmail": "<__PLACEHOLDER_VALUE__Your personal email \u2014 replies go here (e.g. ryan@runsable.com)__>",
+        "fromName": "<__PLACEHOLDER_VALUE__Your first name (e.g. Ryan)__>",
+        "toEmail": "={{ $('Carry Data').item.json.email }}",
+        "subject": "Quick follow-up on your Sable demo request",
+        "contentValue": "=Hi {{ $('Carry Data').item.json.contact_name }},\n\nJust following up on your note about {{ $('Carry Data').item.json.pain_point }} \u2014 still looking for a way to stop missing calls?\n\nHappy to show you a 5-minute demo whenever works for you, no pressure either way. Just reply to this email and we\u2019ll find a time.\n\n\u2013 Ryan\nFounder, Sable\nrunsable.com",
+        "additionalFields": {}
+      },
+      "id": "3779f5b6-ac1a-494f-ab6f-1c769240f4ce",
+      "name": "Follow-up Email",
+      "type": "n8n-nodes-base.sendGrid",
+      "typeVersion": 1,
+      "position": [
+        1568,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "marketing_leads",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Carry Data').item.json.lead_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "follow_up_sent",
+              "fieldValue": "true"
+            },
+            {
+              "fieldId": "follow_up_sent_at",
+              "fieldValue": "={{ $now.toISO() }}"
+            },
+            {
+              "fieldId": "pipeline_stage",
+              "fieldValue": "follow_up_sent"
+            }
+          ]
+        }
+      },
+      "id": "cf71776d-2003-4fd3-b714-452640b355ce",
+      "name": "Log Follow-up Sent",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1792,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Website Lead Form": {
+      "main": [
+        [
+          {
+            "node": "Create Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Lead": {
+      "main": [
+        [
+          {
+            "node": "Carry Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Carry Data": {
+      "main": [
+        [
+          {
+            "node": "Notify Owner",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Owner": {
+      "main": [
+        [
+          {
+            "node": "Wait 2 Days",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 2 Days": {
+      "main": [
+        [
+          {
+            "node": "Re-query Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Re-query Lead": {
+      "main": [
+        [
+          {
+            "node": "Still New Lead?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Still New Lead?": {
+      "main": [
+        [
+          {
+            "node": "Follow-up Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Follow-up Email": {
+      "main": [
+        [
+          {
+            "node": "Log Follow-up Sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "a5f8a7b3-f932-4a5b-8385-7835364ad626",
+  "meta": {
+    "instanceId": "1f898378341ccb341e91602af9fe7508a6860290fcee6f09244305e2b8d071a0"
+  },
+  "nodeGroups": [],
+  "id": "Gm5WV4Q1pMKfNhZz",
+  "tags": []
+}

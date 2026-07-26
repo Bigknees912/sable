@@ -1,0 +1,862 @@
+{
+  "name": "WF2b: Twilio SMS Reply Handler",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "com.twilio.messaging.inbound-message.received"
+        ]
+      },
+      "id": "9e985c1f-fde4-471b-bdae-bb2cee1568d4",
+      "name": "Twilio SMS Trigger",
+      "type": "n8n-nodes-base.twilioTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        288
+      ],
+      "webhookId": "fc0fab6a-0bef-4a5b-a48e-e6e14bb0b1ac"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(item => ({\n  json: {\n    from_number: (item.json.From || '').trim(),\n    normalized_body: (item.json.Body || '').trim().toUpperCase(),\n  }\n}));"
+      },
+      "id": "1c9af1dc-809a-48c4-addb-94fdd6150a01",
+      "name": "Normalize Body",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "confirmation_requests",
+        "limit": 1,
+        "orderBy": "sent_at.desc",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "customer_phone",
+              "condition": "eq",
+              "keyValue": "={{ $('Normalize Body').item.json.from_number }}"
+            },
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "pending"
+            }
+          ]
+        }
+      },
+      "id": "a7a24059-aa12-4d7e-b8ee-857e9c16e20a",
+      "name": "Get Confirmation Request",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        448,
+        288
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "found",
+              "leftValue": "={{ $json.job_id }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "2eddc781-20e9-46b2-8bf0-2a7eebc72f9b",
+      "name": "Confirmation Found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        672,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "customers",
+        "limit": 1,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.customer_id }}"
+            },
+            {
+              "keyName": "company_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.company_id }}"
+            }
+          ]
+        }
+      },
+      "id": "9d315ca3-178f-45a0-b304-6de49fd3c30d",
+      "name": "Get Contact",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        896,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "companies",
+        "limit": 1,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Get Confirmation Request').item.json.company_id }}"
+            }
+          ]
+        }
+      },
+      "id": "639f83d7-8b57-45aa-89f4-16d1f3557873",
+      "name": "Get Company",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "company_id",
+              "value": "={{ $('Get Confirmation Request').item.json.company_id }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "job_id",
+              "value": "={{ $('Get Confirmation Request').item.json.job_id }}",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "customer_id",
+              "value": "={{ $('Get Confirmation Request').item.json.customer_id }}",
+              "type": "string"
+            },
+            {
+              "id": "4",
+              "name": "from_number",
+              "value": "={{ $('Normalize Body').item.json.from_number }}",
+              "type": "string"
+            },
+            {
+              "id": "5",
+              "name": "normalized_body",
+              "value": "={{ $('Normalize Body').item.json.normalized_body }}",
+              "type": "string"
+            },
+            {
+              "id": "6",
+              "name": "customer_name",
+              "value": "={{ $('Get Contact').item.json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "7",
+              "name": "company_name",
+              "value": "={{ $('Get Company').item.json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "8",
+              "name": "owner_email",
+              "value": "={{ $('Get Company').item.json.contact_email || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "9",
+              "name": "owner_slack_channel",
+              "value": "={{ $('Get Company').item.json.owner_slack_channel || '' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ba1a5351-5a08-4025-9378-9b178663ed41",
+      "name": "Set Bundle",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1344,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "yes",
+                    "leftValue": "={{ $json.normalized_body }}",
+                    "rightValue": "YES",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "reschedule",
+                    "leftValue": "={{ $json.normalized_body }}",
+                    "rightValue": "RESCHEDULE",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "ebab5e57-b5ab-418c-b7cd-0f07ab2e8cff",
+      "name": "Route SMS Reply",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1568,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "confirmation_requests",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "job_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.job_id }}"
+            },
+            {
+              "keyName": "company_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.company_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "confirmed"
+            }
+          ]
+        }
+      },
+      "id": "abccca0b-6f58-458d-bb25-11944df5eb41",
+      "name": "Update Confirm: Confirmed",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1792,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "jobs",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Set Bundle').item.json.job_id }}"
+            },
+            {
+              "keyName": "company_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Set Bundle').item.json.company_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "confirmation_state",
+              "fieldValue": "confirmed"
+            },
+            {
+              "fieldId": "confirmed_at",
+              "fieldValue": "={{ $now.toISO() }}"
+            }
+          ]
+        }
+      },
+      "id": "f6c1ac51-41d7-431d-aa48-db89f722eeb5",
+      "name": "Update Job: Confirmed",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2016,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "from": "<__PLACEHOLDER_VALUE__Twilio phone number (E.164)__>",
+        "to": "={{ $('Set Bundle').item.json.from_number }}",
+        "message": "=Great, see you tomorrow! \u2013 {{ $('Set Bundle').item.json.company_name }}",
+        "options": {}
+      },
+      "id": "07853d6f-e06b-4dd0-a6f7-d88151c6008a",
+      "name": "Reply: Confirmed",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        2240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "confirmation_requests",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "job_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.job_id }}"
+            },
+            {
+              "keyName": "company_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.company_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "reschedule_requested"
+            }
+          ]
+        }
+      },
+      "id": "f632076e-2211-4c5a-be13-aadc4334ec87",
+      "name": "Update Confirm: Reschedule",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1792,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "jobs",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Set Bundle').item.json.job_id }}"
+            },
+            {
+              "keyName": "company_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Set Bundle').item.json.company_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "confirmation_state",
+              "fieldValue": "reschedule_requested"
+            }
+          ]
+        }
+      },
+      "id": "4e62d001-3ed3-4a29-acd8-fa046dcb8669",
+      "name": "Update Job: Reschedule",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2016,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://runsable.app.n8n.cloud/webhook/sable-nurture-campaign",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "company_id",
+              "value": "={{ $('Set Bundle').item.json.company_id }}"
+            },
+            {
+              "name": "contact_id",
+              "value": "={{ $('Set Bundle').item.json.customer_id }}"
+            },
+            {
+              "name": "entry_reason",
+              "value": "reschedule_decline"
+            },
+            {
+              "name": "job_id",
+              "value": "={{ $('Set Bundle').item.json.job_id }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "2d8595ba-0df5-447a-91c3-06eefd6a5532",
+      "name": "Call WF5: Nurture Campaign",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2240,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "slack",
+              "leftValue": "={{ $('Set Bundle').item.json.owner_slack_channel }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "ab659645-e2f4-4c80-a3bb-91025f12ad24",
+      "name": "Has Slack Channel?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2464,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Set Bundle').item.json.owner_slack_channel }}"
+        },
+        "text": "={{ $('Set Bundle').item.json.customer_name }} requested to RESCHEDULE job {{ $('Set Bundle').item.json.job_id }}. Update their appointment in the dashboard.",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "a5ee7ff9-965a-417c-96e6-3a9ba6bb8339",
+      "name": "Slack: Reschedule Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.5,
+      "position": [
+        2688,
+        0
+      ],
+      "webhookId": "e69480f7-ea39-4b41-a6cf-fc1e95dcb467"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "email",
+              "leftValue": "={{ $('Set Bundle').item.json.owner_email }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "75ac6d3c-2769-453b-b73a-3bbbc4616677",
+      "name": "Has Owner Email?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2464,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "mail",
+        "fromEmail": "<__PLACEHOLDER_VALUE__Alert sender email (e.g. alerts@runsable.com)__>",
+        "fromName": "Sable Alerts",
+        "toEmail": "={{ $('Set Bundle').item.json.owner_email }}",
+        "subject": "=Reschedule Request: {{ $('Set Bundle').item.json.customer_name }}",
+        "contentValue": "={{ $('Set Bundle').item.json.customer_name }} has requested to reschedule their appointment.\n\nJob ID: {{ $('Set Bundle').item.json.job_id }}\nCompany: {{ $('Set Bundle').item.json.company_name }}\n\nPlease update their appointment in the Sable dashboard.\n\n\u2013 Sable",
+        "additionalFields": {}
+      },
+      "id": "ca0e635c-9535-42f1-a6af-e5d4dc8a84f8",
+      "name": "Email: Reschedule Alert",
+      "type": "n8n-nodes-base.sendGrid",
+      "typeVersion": 1,
+      "position": [
+        2688,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "from": "<__PLACEHOLDER_VALUE__Twilio phone number (E.164)__>",
+        "to": "={{ $('Set Bundle').item.json.from_number }}",
+        "message": "=Got it! Our team will reach out shortly to find a new time. \u2013 {{ $('Set Bundle').item.json.company_name }}",
+        "options": {}
+      },
+      "id": "531cdd66-175e-41aa-a31a-c3ea0fa12bc7",
+      "name": "Reply: Reschedule",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        2464,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "from": "<__PLACEHOLDER_VALUE__Twilio phone number (E.164)__>",
+        "to": "={{ $('Set Bundle').item.json.from_number }}",
+        "message": "Sorry, we didn't understand that. Please reply YES to confirm or RESCHEDULE to request a new time.",
+        "options": {}
+      },
+      "id": "97b6458a-fe45-47a9-be95-763c07f234c8",
+      "name": "Reply: Unknown",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        1792,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "from": "<__PLACEHOLDER_VALUE__Twilio phone number (E.164)__>",
+        "to": "={{ $('Normalize Body').item.json.from_number }}",
+        "message": "We couldn't find a pending appointment for this number. Please call us directly.",
+        "options": {}
+      },
+      "id": "2c612a9b-b994-463e-901f-186f611fe920",
+      "name": "Reply: Not Found",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        896,
+        384
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Twilio SMS Trigger": {
+      "main": [
+        [
+          {
+            "node": "Normalize Body",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Body": {
+      "main": [
+        [
+          {
+            "node": "Get Confirmation Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Confirmation Request": {
+      "main": [
+        [
+          {
+            "node": "Confirmation Found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirmation Found?": {
+      "main": [
+        [
+          {
+            "node": "Get Contact",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply: Not Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Contact": {
+      "main": [
+        [
+          {
+            "node": "Get Company",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Company": {
+      "main": [
+        [
+          {
+            "node": "Set Bundle",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Bundle": {
+      "main": [
+        [
+          {
+            "node": "Route SMS Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route SMS Reply": {
+      "main": [
+        [
+          {
+            "node": "Update Confirm: Confirmed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update Confirm: Reschedule",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reply: Unknown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Confirm: Confirmed": {
+      "main": [
+        [
+          {
+            "node": "Update Job: Confirmed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Job: Confirmed": {
+      "main": [
+        [
+          {
+            "node": "Reply: Confirmed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Confirm: Reschedule": {
+      "main": [
+        [
+          {
+            "node": "Update Job: Reschedule",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Job: Reschedule": {
+      "main": [
+        [
+          {
+            "node": "Call WF5: Nurture Campaign",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call WF5: Nurture Campaign": {
+      "main": [
+        [
+          {
+            "node": "Has Slack Channel?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Has Owner Email?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Reply: Reschedule",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Slack Channel?": {
+      "main": [
+        [
+          {
+            "node": "Slack: Reschedule Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Owner Email?": {
+      "main": [
+        [
+          {
+            "node": "Email: Reschedule Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "97849e05-615b-4d53-ad01-d1f8ef842391",
+  "meta": {
+    "instanceId": "1f898378341ccb341e91602af9fe7508a6860290fcee6f09244305e2b8d071a0"
+  },
+  "nodeGroups": [],
+  "id": "PiN9YZxIrx15jQuh",
+  "tags": []
+}

@@ -1,0 +1,529 @@
+{
+  "name": "WF6: Weather-triggered Staffing Alert",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 11 * * *"
+            }
+          ]
+        }
+      },
+      "id": "809f61a6-f600-4cbf-ae2e-c01b037692ff",
+      "name": "Daily 5 AM MDT",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        528
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "companies",
+        "returnAll": true,
+        "filterType": "string",
+        "filterString": "status=eq.active"
+      },
+      "id": "a9efe4ed-e758-42d7-95c8-65685554878a",
+      "name": "Get Active Companies",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        224,
+        528
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "has_lat",
+              "leftValue": "={{ $json.service_area_lat }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            },
+            {
+              "id": "has_lng",
+              "leftValue": "={{ $json.service_area_lng }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "ce508c29-ebb5-49a4-affd-7ef6ac6987c6",
+      "name": "Has Coordinates?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        672,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.open-meteo.com/v1/forecast?latitude={{ $json.service_area_lat }}&longitude={{ $json.service_area_lng }}&daily=precipitation_probability_max&timezone=auto&forecast_days=2",
+        "options": {}
+      },
+      "id": "4f31ec47-ed2a-46b1-be97-90ffdc3c7882",
+      "name": "Get Weather Forecast",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        896,
+        96
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst company    = $('Get Active Companies').item.json;\nconst weather    = $input.first().json;\nconst precipArr  = weather.daily && weather.daily.precipitation_probability_max;\nconst precip_pct = precipArr ? (precipArr[1] || 0) : 0;\nconst tomorrow_label = new Date(Date.now() + 86400000).toLocaleDateString('en-US', {\n  weekday: 'long', month: 'long', day: 'numeric',\n});\nreturn [{\n  json: {\n    precip_pct,\n    tomorrow_label,\n    company_name:        (company.name         || '').toString(),\n    owner_email:         (company.contact_email          || '').toString(),\n    owner_slack_channel: (company.owner_slack_channel  || '').toString(),\n    service_type:        (company.trade         || '').toString(),\n    company_id:          (company.id                   || '').toString(),\n  },\n}];\n"
+      },
+      "id": "8b84fcde-fe20-4fa7-934a-c83bf48df073",
+      "name": "Extract Precip",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "precip_check",
+              "leftValue": "={{ $json.precip_pct }}",
+              "rightValue": 25,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "45f5c09b-888c-4782-aab1-e414275548de",
+      "name": "High Precip?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1344,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst d = $input.first().json;\nlet msg = 'Weather Alert for ' + d.company_name + ': ' + d.precip_pct +\n  '% chance of precipitation on ' + d.tomorrow_label +\n  '. Consider additional on-call staffing.';\nif ((d.service_type || '').toLowerCase().includes('plumb')) {\n  msg += ' HIGH SUMP PUMP / BASEMENT FLOODING RISK \\u2014 prioritize emergency response readiness.';\n}\nreturn [{ json: { ...d, alert_message: msg } }];\n"
+      },
+      "id": "9b26ffa1-1d66-4548-9599-59373138f9db",
+      "name": "Build Alert Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1568,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "slack_check",
+              "leftValue": "={{ $json.owner_slack_channel }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "12b3c7e8-ecff-47db-9770-4f4b9ef3002d",
+      "name": "Has Slack Channel?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1792,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $json.owner_slack_channel }}"
+        },
+        "text": "={{ $json.alert_message }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "4201e155-d679-4f9b-ba67-1dbb0d04e6b8",
+      "name": "Slack Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.5,
+      "position": [
+        2016,
+        0
+      ],
+      "webhookId": "37a1810c-9744-44bc-b83b-b72ab7f3ee38"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "email_a",
+              "leftValue": "={{ $('Build Alert Message').item.json.owner_email }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "2fe639ed-7dac-46ef-abf3-01f46ddf8650",
+      "name": "Has Owner Email? (A)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "mail",
+        "fromEmail": "<__PLACEHOLDER_VALUE__Sender email address__>",
+        "toEmail": "={{ $('Build Alert Message').item.json.owner_email }}",
+        "subject": "=Staffing Alert: {{ $('Build Alert Message').item.json.precip_pct }}% precipitation {{ $('Build Alert Message').item.json.tomorrow_label }}",
+        "contentValue": "={{ $('Build Alert Message').item.json.alert_message }}",
+        "additionalFields": {}
+      },
+      "id": "ae60321f-3fa5-48fe-8b9f-960ce53f3842",
+      "name": "Email Alert (A)",
+      "type": "n8n-nodes-base.sendGrid",
+      "typeVersion": 1,
+      "position": [
+        2464,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "c91210f5-3edd-40c1-8b53-91f571a0d755",
+      "name": "Loop Companies",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        448,
+        528
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "email_b",
+              "leftValue": "={{ $json.owner_email }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c7639c25-44cb-41ef-9bbe-3e5066181d98",
+      "name": "Has Owner Email? (B)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2016,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "mail",
+        "fromEmail": "<__PLACEHOLDER_VALUE__Sender email address__>",
+        "toEmail": "={{ $json.owner_email }}",
+        "subject": "=Staffing Alert: {{ $json.precip_pct }}% precipitation {{ $json.tomorrow_label }}",
+        "contentValue": "={{ $json.alert_message }}",
+        "additionalFields": {}
+      },
+      "id": "509b5416-cf84-4ea1-89da-8c100ed783eb",
+      "name": "Email Alert (B)",
+      "type": "n8n-nodes-base.sendGrid",
+      "typeVersion": 1,
+      "position": [
+        2240,
+        192
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Daily 5 AM MDT": {
+      "main": [
+        [
+          {
+            "node": "Get Active Companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Active Companies": {
+      "main": [
+        [
+          {
+            "node": "Loop Companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Coordinates?": {
+      "main": [
+        [
+          {
+            "node": "Get Weather Forecast",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Weather Forecast": {
+      "main": [
+        [
+          {
+            "node": "Extract Precip",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Precip": {
+      "main": [
+        [
+          {
+            "node": "High Precip?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "High Precip?": {
+      "main": [
+        [
+          {
+            "node": "Build Alert Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Alert Message": {
+      "main": [
+        [
+          {
+            "node": "Has Slack Channel?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Slack Channel?": {
+      "main": [
+        [
+          {
+            "node": "Slack Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Has Owner Email? (B)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack Alert": {
+      "main": [
+        [
+          {
+            "node": "Has Owner Email? (A)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Owner Email? (A)": {
+      "main": [
+        [
+          {
+            "node": "Email Alert (A)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Alert (A)": {
+      "main": [
+        [
+          {
+            "node": "Loop Companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Companies": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Has Coordinates?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Owner Email? (B)": {
+      "main": [
+        [
+          {
+            "node": "Email Alert (B)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Alert (B)": {
+      "main": [
+        [
+          {
+            "node": "Loop Companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "7787cdce-8c7c-430d-a814-6a4b531bb73b",
+  "meta": {
+    "instanceId": "1f898378341ccb341e91602af9fe7508a6860290fcee6f09244305e2b8d071a0"
+  },
+  "nodeGroups": [],
+  "id": "kC9KHEyl6qgDG5s4",
+  "tags": []
+}

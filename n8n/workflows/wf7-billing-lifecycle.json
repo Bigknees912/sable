@@ -1,0 +1,860 @@
+{
+  "name": "WF7: Trial and Billing Lifecycle (Stripe events)",
+  "nodes": [
+    {
+      "parameters": {
+        "events": [
+          "customer.subscription.trial_will_end",
+          "invoice.payment_failed",
+          "customer.subscription.deleted"
+        ]
+      },
+      "id": "889c0c26-2823-4895-8e5c-07862f935799",
+      "name": "Stripe Trigger",
+      "type": "n8n-nodes-base.stripeTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        480
+      ],
+      "webhookId": "85c4d529-1b10-4c8e-97d4-693c95a1346d"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "stripe_customer_id",
+              "value": "={{ $json.data.object.customer }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "event_type",
+              "value": "={{ $json.type }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7b05dd73-6c72-49c2-bf87-c97673347c2c",
+      "name": "Extract Event",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        224,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "companies_with_billing",
+        "limit": 1,
+        "filterType": "string",
+        "filterString": "=stripe_customer_id=eq.{{ $json.stripe_customer_id }}"
+      },
+      "id": "0ddd5c1a-3d20-4f99-9e9a-93bdf033ce63",
+      "name": "Get Company",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        448,
+        480
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "has_id",
+              "leftValue": "={{ $json.id }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "6e32c088-17be-40df-8625-eb6cf3cd3ac7",
+      "name": "Company Found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        672,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "company_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "company_name",
+              "value": "={{ $json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "owner_email",
+              "value": "={{ $json.contact_email || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "4",
+              "name": "owner_phone",
+              "value": "={{ $json.owner_phone || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "5",
+              "name": "owner_slack_channel",
+              "value": "={{ $json.owner_slack_channel || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "6",
+              "name": "stripe_customer_id",
+              "value": "={{ $('Extract Event').item.json.stripe_customer_id }}",
+              "type": "string"
+            },
+            {
+              "id": "7",
+              "name": "event_type",
+              "value": "={{ $('Extract Event').item.json.event_type }}",
+              "type": "string"
+            },
+            {
+              "id": "8",
+              "name": "billing_link",
+              "value": "<__PLACEHOLDER_VALUE__Billing portal URL (e.g. https://billing.sable.com)__>",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ede404bd-4014-4431-b443-b32da3803bba",
+      "name": "Set Bundle",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        896,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "expression",
+        "output": "={{ $json.event_type === \"customer.subscription.trial_will_end\" ? 0 : $json.event_type === \"invoice.payment_failed\" ? 1 : $json.event_type === \"customer.subscription.deleted\" ? 2 : 3 }}"
+      },
+      "id": "00831e3c-5c95-47c6-8fac-7ae11071faf5",
+      "name": "Route Event",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        1120,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst bundle = $input.first().json;\nconst trigger = $('Stripe Trigger').item.json;\nconst trial_end = trigger.data.object.trial_end;\nconst trial_end_date = new Date(trial_end * 1000).toLocaleDateString('en-US', {\n  month: 'long', day: 'numeric', year: 'numeric',\n});\nreturn [{ json: { ...bundle, trial_end_date } }];\n"
+      },
+      "id": "ea0323e3-3ed8-42b3-b77f-f5e290596138",
+      "name": "Format Trial End",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1344,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "email_a",
+              "leftValue": "={{ $json.owner_email }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "1cfaa1da-ba2b-43a8-94c9-2bc9c7652261",
+      "name": "Has Email? A",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1568,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "mail",
+        "fromEmail": "<__PLACEHOLDER_VALUE__Sender email address__>",
+        "toEmail": "={{ $json.owner_email }}",
+        "subject": "Your Sable trial ends in 2 days",
+        "contentValue": "=Your Sable trial ends on {{ $json.trial_end_date }}. Add billing to keep your service: {{ $json.billing_link }}",
+        "additionalFields": {}
+      },
+      "id": "abf25ba2-9356-4471-b8d2-8afea083d9a9",
+      "name": "Trial Email",
+      "type": "n8n-nodes-base.sendGrid",
+      "typeVersion": 1,
+      "position": [
+        1792,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "phone_a_e",
+              "leftValue": "={{ $('Format Trial End').item.json.owner_phone }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c8670c53-8ba5-4b98-9e34-6f5763d642d4",
+      "name": "Has Phone? A (post-email)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2016,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "from": "<__PLACEHOLDER_VALUE__Twilio phone number (E.164, e.g. +15005550006)__>",
+        "to": "={{ $('Format Trial End').item.json.owner_phone }}",
+        "message": "=Sable trial ending in 2 days! Add billing to keep your service: {{ $('Format Trial End').item.json.billing_link }}",
+        "options": {}
+      },
+      "id": "33ac8d2a-ac90-4f32-85e9-82757a48964f",
+      "name": "Trial SMS (post-email)",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        2240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "phone_a_ne",
+              "leftValue": "={{ $json.owner_phone }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "496116ff-2a3d-4d13-bc7e-6a77ae08a5d8",
+      "name": "Has Phone? A (no-email)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1792,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "from": "<__PLACEHOLDER_VALUE__Twilio phone number (E.164, e.g. +15005550006)__>",
+        "to": "={{ $json.owner_phone }}",
+        "message": "=Sable trial ending in 2 days! Add billing to keep your service: {{ $json.billing_link }}",
+        "options": {}
+      },
+      "id": "0e0d5d83-1a32-4b27-aa54-0636c27e04d0",
+      "name": "Trial SMS (no-email)",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        2016,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "companies",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.company_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "payment_failed"
+            }
+          ]
+        }
+      },
+      "id": "b6a08616-8086-4d6f-879d-fcb41f4a8407",
+      "name": "Mark Payment Failed",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1344,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "email_b",
+              "leftValue": "={{ $('Set Bundle').item.json.owner_email }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "dae2e052-da95-4c9a-aed7-bf244ce1d982",
+      "name": "Has Email? B",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1568,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "mail",
+        "fromEmail": "<__PLACEHOLDER_VALUE__Sender email address__>",
+        "toEmail": "={{ $('Set Bundle').item.json.owner_email }}",
+        "subject": "Sable: Payment failed \u2014 action required",
+        "contentValue": "=Your Sable payment failed. Update your billing to restore service: {{ $('Set Bundle').item.json.billing_link }}",
+        "additionalFields": {}
+      },
+      "id": "c898976e-39ef-42d2-adc8-48b5c1ac5ac5",
+      "name": "Payment Failed Email",
+      "type": "n8n-nodes-base.sendGrid",
+      "typeVersion": 1,
+      "position": [
+        1792,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "phone_b_e",
+              "leftValue": "={{ $('Set Bundle').item.json.owner_phone }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "4a24374a-4e29-41f4-88e8-bbe6669758bc",
+      "name": "Has Phone? B (post-email)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2016,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "from": "<__PLACEHOLDER_VALUE__Twilio phone number (E.164, e.g. +15005550006)__>",
+        "to": "={{ $('Set Bundle').item.json.owner_phone }}",
+        "message": "=Sable: Your payment failed. Update billing: {{ $('Set Bundle').item.json.billing_link }}",
+        "options": {}
+      },
+      "id": "7d996f10-a096-4d86-9f6e-76e379cf63da",
+      "name": "Payment SMS (post-email)",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        2240,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "phone_b_ne",
+              "leftValue": "={{ $('Set Bundle').item.json.owner_phone }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "8eaba4a2-0072-4fe2-8932-dca63a8bbe93",
+      "name": "Has Phone? B (no-email)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1792,
+        576
+      ]
+    },
+    {
+      "parameters": {
+        "from": "<__PLACEHOLDER_VALUE__Twilio phone number (E.164, e.g. +15005550006)__>",
+        "to": "={{ $('Set Bundle').item.json.owner_phone }}",
+        "message": "=Sable: Your payment failed. Update billing: {{ $('Set Bundle').item.json.billing_link }}",
+        "options": {}
+      },
+      "id": "1e7b9d74-2234-44fb-98be-b49812d1d478",
+      "name": "Payment SMS (no-email)",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        2016,
+        576
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "companies",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.company_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "cancelled"
+            },
+            {
+              "fieldId": "cancelled_at",
+              "fieldValue": "={{ $now.toISO() }}"
+            }
+          ]
+        }
+      },
+      "id": "351a8359-5089-4983-902a-df0e99403342",
+      "name": "Mark Cancelled",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1344,
+        768
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst bundle = $('Set Bundle').item.json;\nconst trigger = $('Stripe Trigger').item.json;\nconst details = trigger.data.object.cancellation_details;\nconst cancellation_reason = (details && details.reason) ? details.reason.toString() : 'unknown';\nreturn [{ json: { ...bundle, cancellation_reason } }];\n"
+      },
+      "id": "f25541c3-e5b1-4bcd-a289-713148f375e3",
+      "name": "Get Cancel Reason",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1568,
+        768
+      ]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "<__PLACEHOLDER_VALUE__Platform owner Slack channel ID__>"
+        },
+        "text": "=Subscription cancelled: {{ $json.company_name }} | Reason: {{ $json.cancellation_reason }} | Stripe: {{ $json.stripe_customer_id }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "06b4b479-3a05-4d5c-abb7-5e36851c5d7d",
+      "name": "Platform Slack Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.5,
+      "position": [
+        1792,
+        768
+      ],
+      "webhookId": "171c5f1a-3977-496f-b8b8-502be50d5f3e"
+    },
+    {
+      "parameters": {
+        "resource": "mail",
+        "fromEmail": "<__PLACEHOLDER_VALUE__Sender email address__>",
+        "toEmail": "<__PLACEHOLDER_VALUE__Platform owner email address__>",
+        "subject": "=Churn alert: {{ $('Get Cancel Reason').item.json.company_name }} cancelled",
+        "contentValue": "=Company: {{ $('Get Cancel Reason').item.json.company_name }}\nCompany ID: {{ $('Get Cancel Reason').item.json.company_id }}\nCancellation Reason: {{ $('Get Cancel Reason').item.json.cancellation_reason }}\nStripe Customer: {{ $('Get Cancel Reason').item.json.stripe_customer_id }}\n\nData preserved \u2014 manual follow-up recommended.",
+        "additionalFields": {}
+      },
+      "id": "a6dd0223-a0d2-4a82-817b-8d2fc1da1e73",
+      "name": "Platform Email Alert",
+      "type": "n8n-nodes-base.sendGrid",
+      "typeVersion": 1,
+      "position": [
+        2016,
+        768
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Stripe Trigger": {
+      "main": [
+        [
+          {
+            "node": "Extract Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Event": {
+      "main": [
+        [
+          {
+            "node": "Get Company",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Company": {
+      "main": [
+        [
+          {
+            "node": "Company Found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Company Found?": {
+      "main": [
+        [
+          {
+            "node": "Set Bundle",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Bundle": {
+      "main": [
+        [
+          {
+            "node": "Route Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Event": {
+      "main": [
+        [
+          {
+            "node": "Format Trial End",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark Payment Failed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark Cancelled",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Trial End": {
+      "main": [
+        [
+          {
+            "node": "Has Email? A",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Email? A": {
+      "main": [
+        [
+          {
+            "node": "Trial Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Has Phone? A (no-email)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trial Email": {
+      "main": [
+        [
+          {
+            "node": "Has Phone? A (post-email)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Phone? A (post-email)": {
+      "main": [
+        [
+          {
+            "node": "Trial SMS (post-email)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Phone? A (no-email)": {
+      "main": [
+        [
+          {
+            "node": "Trial SMS (no-email)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Payment Failed": {
+      "main": [
+        [
+          {
+            "node": "Has Email? B",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Email? B": {
+      "main": [
+        [
+          {
+            "node": "Payment Failed Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Has Phone? B (no-email)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Payment Failed Email": {
+      "main": [
+        [
+          {
+            "node": "Has Phone? B (post-email)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Phone? B (post-email)": {
+      "main": [
+        [
+          {
+            "node": "Payment SMS (post-email)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Phone? B (no-email)": {
+      "main": [
+        [
+          {
+            "node": "Payment SMS (no-email)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Cancelled": {
+      "main": [
+        [
+          {
+            "node": "Get Cancel Reason",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Cancel Reason": {
+      "main": [
+        [
+          {
+            "node": "Platform Slack Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Platform Slack Alert": {
+      "main": [
+        [
+          {
+            "node": "Platform Email Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "1414e350-33c5-4cb5-9009-0a9ad94cb89f",
+  "meta": {
+    "instanceId": "1f898378341ccb341e91602af9fe7508a6860290fcee6f09244305e2b8d071a0"
+  },
+  "nodeGroups": [],
+  "id": "eG0AkczG12Xx65KG",
+  "tags": []
+}

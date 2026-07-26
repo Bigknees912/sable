@@ -1,0 +1,1856 @@
+{
+  "name": "WF5: Nurture & Reactivation Campaign",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "sable-nurture-campaign",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "d2fd16a5-5153-4130-89be-fef13580f1ac",
+      "name": "Nurture Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        192
+      ],
+      "webhookId": "232663fe-860d-40ae-ae12-03e214519e1d"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cid",
+              "leftValue": "={{ $json.body.company_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "8843e3cb-b23c-4140-9951-6336446d96a8",
+      "name": "company_id Present?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        224,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": {
+          "status": "accepted"
+        },
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "a2f1e20a-d52b-4cb6-afdd-48ef158a4163",
+      "name": "Respond 200",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        448,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "customers",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "keyValue": "={{ $json.body.contact_id }}"
+            },
+            {
+              "keyName": "company_id",
+              "keyValue": "={{ $json.body.company_id }}"
+            }
+          ]
+        }
+      },
+      "id": "2ab544b9-1042-4313-bbbb-3d9176d0c42a",
+      "name": "Get Contact",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        672,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "companies",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "keyValue": "={{ $json.company_id }}"
+            }
+          ]
+        }
+      },
+      "id": "31380853-ceb1-4139-9495-dcb03af7cf2a",
+      "name": "Get Company",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        896,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "jobs",
+        "filterType": "string",
+        "filterString": "=customer_id=eq.{{ $('Get Contact').item.json.id }}&company_id=eq.{{ $('Get Company').item.json.id }}&status=eq.done&order=scheduled_at.desc&limit=1"
+      },
+      "id": "6c04d887-11e0-4853-ad02-eadd3d4393f0",
+      "name": "Get Last Job",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        96
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "\nconst body    = $('Nurture Webhook').item.json.body;\nconst contact = $('Get Contact').item.json;\nconst company = $('Get Company').item.json;\nconst job     = $('Get Last Job').item.json;\n\nconst name       = (contact.name || '').toString();\nconst first_name = name.split(' ')[0] || name;\nconst svc        = (job && job.service_type) ? job.service_type.toString() : 'your';\n\nreturn {\n  json: {\n    first_name,\n    phone:        (contact.phone        || '').toString(),\n    email:        (contact.email        || '').toString(),\n    company_name: (company.name || '').toString(),\n    company_id:   (body.company_id      || '').toString(),\n    contact_id:   (body.contact_id      || '').toString(),\n    entry_reason: (body.entry_reason    || '').toString(),\n    service_type: svc,\n  },\n};\n"
+      },
+      "id": "ba245833-0a67-44c8-a2c8-bbc0b5f6e7a5",
+      "name": "Build Bundle",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1344,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "jobs",
+        "filterType": "string",
+        "filterString": "=customer_id=eq.{{ $json.contact_id }}&company_id=eq.{{ $json.company_id }}&status=in.(unassigned,assigned)&limit=1"
+      },
+      "id": "26a3936f-bb61-4b8b-a063-fbb3e0fa0f0c",
+      "name": "Pre-check A",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1568,
+        96
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst items = $input.all();\nconst bundle = $('Build Bundle').first().json;\nconst is_booked = items.some(i => !!(i.json && i.json.id));\nreturn [{ json: { ...bundle, is_booked } }];\n"
+      },
+      "id": "94e35709-f2ba-495f-b8a6-6b05e3c4936b",
+      "name": "Is Booked A",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1792,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "booked",
+              "leftValue": "={{ $json.is_booked }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "e693f54f-e8de-46ac-af24-141bcb3c7e93",
+      "name": "Booked? A",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2016,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "tableId": "nurture_log",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "company_id",
+              "fieldValue": "={{ $json.company_id }}"
+            },
+            {
+              "fieldId": "contact_id",
+              "fieldValue": "={{ $json.contact_id }}"
+            },
+            {
+              "fieldId": "entry_reason",
+              "fieldValue": "={{ $json.entry_reason }}"
+            },
+            {
+              "fieldId": "message_number",
+              "fieldValue": "0"
+            },
+            {
+              "fieldId": "sent_at",
+              "fieldValue": "={{ $now.toISO() }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "stopped_booked"
+            }
+          ]
+        }
+      },
+      "id": "95627724-5706-4339-9fda-e06c6ef80ebb",
+      "name": "Log Stopped A",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst d = $input.first().json;\nconst n = 1;\nconst tmpl = {\n  reschedule_decline: {\n    1: 'Hi ' + d.first_name + ', we noticed you needed to reschedule. We\\'d love to find a time that works! Call or text us anytime.',\n    2: 'Hi ' + d.first_name + ', following up \\u2014 we have openings this week for your ' + d.service_type + ' service. Let us know!',\n    3: 'Hi ' + d.first_name + ', last check-in \\u2014 we\\'d love to get your ' + d.service_type + ' taken care of. Call or text. \\u2013 ' + d.company_name,\n  },\n  negative_feedback_resolved: {\n    1: 'Hi ' + d.first_name + ', we\\'re sorry your last experience wasn\\'t perfect. We\\'d love another chance. \\u2013 ' + d.company_name,\n    2: 'Hi ' + d.first_name + ', we\\'ve taken your feedback to heart. Book anytime! \\u2013 ' + d.company_name,\n    3: 'Hi ' + d.first_name + ', final outreach \\u2014 we\\'d love to earn your trust back. Call anytime. \\u2013 ' + d.company_name,\n  },\n  dormant_6mo: {\n    1: 'Hi ' + d.first_name + ', it\\'s been a while since your last ' + d.service_type + ' service! Time for a maintenance check? \\u2013 ' + d.company_name,\n    2: 'Hi ' + d.first_name + ', regular maintenance keeps things running. We have availability this week. \\u2013 ' + d.company_name,\n    3: 'Hi ' + d.first_name + ', last reminder \\u2014 call or text anytime to schedule. \\u2013 ' + d.company_name,\n  },\n};\nconst message = ((tmpl[d.entry_reason] || {})[n]) || ('Hi ' + d.first_name + ', checking in. \\u2013 ' + d.company_name);\nreturn [{ json: { ...d, message, message_number: n } }];\n"
+      },
+      "id": "3be46750-33f3-4b4c-80c5-9b9c5eb00abe",
+      "name": "Build Msg 1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2240,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "phone",
+              "leftValue": "={{ $json.phone }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "316761d1-8083-4da2-8259-525ae2246145",
+      "name": "Has Phone? 1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2464,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "from": "<__PLACEHOLDER_VALUE__Twilio phone number (E.164, e.g. +15005550006)__>",
+        "to": "={{ $json.phone }}",
+        "message": "={{ $json.message }}",
+        "options": {}
+      },
+      "id": "619de66b-ae2e-46a0-ba31-e2eaae317cba",
+      "name": "Send SMS 1",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        2912,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "tableId": "nurture_log",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "company_id",
+              "fieldValue": "={{ $('Build Bundle').item.json.company_id }}"
+            },
+            {
+              "fieldId": "contact_id",
+              "fieldValue": "={{ $('Build Bundle').item.json.contact_id }}"
+            },
+            {
+              "fieldId": "entry_reason",
+              "fieldValue": "={{ $('Build Bundle').item.json.entry_reason }}"
+            },
+            {
+              "fieldId": "message_number",
+              "fieldValue": "1"
+            },
+            {
+              "fieldId": "sent_at",
+              "fieldValue": "={{ $now.toISO() }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "sent"
+            }
+          ]
+        }
+      },
+      "id": "3a267fce-afe1-42a1-82a6-6e85e66b137a",
+      "name": "Insert Log 1",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        3136,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 3,
+        "unit": "days"
+      },
+      "id": "5d2890c9-1229-4518-b31b-ca57e341bdab",
+      "name": "Wait 3 Days",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        3360,
+        96
+      ],
+      "webhookId": "4b157dd4-b69c-45a9-ba48-f95c0a4892ac"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "email",
+              "leftValue": "={{ $json.email }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "617ee54b-7b26-4c6f-9812-cb4870971f04",
+      "name": "Has Email? 1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2688,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "mail",
+        "fromEmail": "<__PLACEHOLDER_VALUE__Sender email address__>",
+        "toEmail": "={{ $json.email }}",
+        "subject": "={{ $json.company_name }} - Following up",
+        "contentValue": "={{ $json.message }}",
+        "additionalFields": {}
+      },
+      "id": "b009b704-883c-49a0-b5c2-49d9ce5588ce",
+      "name": "Send Email 1",
+      "type": "n8n-nodes-base.sendGrid",
+      "typeVersion": 1,
+      "position": [
+        2912,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "tableId": "nurture_log",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "company_id",
+              "fieldValue": "={{ $json.company_id }}"
+            },
+            {
+              "fieldId": "contact_id",
+              "fieldValue": "={{ $json.contact_id }}"
+            },
+            {
+              "fieldId": "entry_reason",
+              "fieldValue": "={{ $json.entry_reason }}"
+            },
+            {
+              "fieldId": "message_number",
+              "fieldValue": "0"
+            },
+            {
+              "fieldId": "sent_at",
+              "fieldValue": "={{ $now.toISO() }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "no_contact_info"
+            }
+          ]
+        }
+      },
+      "id": "888b9864-16c1-4a4c-a21f-505b97c440ae",
+      "name": "Log No Contact 1",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2912,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": {
+          "error": "company_id is required"
+        },
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "fba01dc9-4816-4915-9614-be0c0087095d",
+      "name": "Respond 400",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        448,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "jobs",
+        "filterType": "string",
+        "filterString": "=customer_id=eq.{{ $json.contact_id }}&company_id=eq.{{ $json.company_id }}&status=in.(unassigned,assigned)&limit=1"
+      },
+      "id": "3efc68c7-55ce-4596-a85f-605c7ec86600",
+      "name": "Pre-check B",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        3584,
+        96
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst items = $input.all();\nconst bundle = $('Build Bundle').first().json;\nconst is_booked = items.some(i => !!(i.json && i.json.id));\nreturn [{ json: { ...bundle, is_booked } }];\n"
+      },
+      "id": "dae1dae3-60c8-4f5d-b688-ed62a09cf9e1",
+      "name": "Is Booked B",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3808,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "booked",
+              "leftValue": "={{ $json.is_booked }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "288b63ab-fe94-41f0-a907-4f3e6c4febc2",
+      "name": "Booked? B",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        4032,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "tableId": "nurture_log",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "company_id",
+              "fieldValue": "={{ $json.company_id }}"
+            },
+            {
+              "fieldId": "contact_id",
+              "fieldValue": "={{ $json.contact_id }}"
+            },
+            {
+              "fieldId": "entry_reason",
+              "fieldValue": "={{ $json.entry_reason }}"
+            },
+            {
+              "fieldId": "message_number",
+              "fieldValue": "0"
+            },
+            {
+              "fieldId": "sent_at",
+              "fieldValue": "={{ $now.toISO() }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "stopped_booked"
+            }
+          ]
+        }
+      },
+      "id": "7408714b-8f72-43cf-8f44-98c0ca4f1db2",
+      "name": "Log Stopped B",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        4256,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst d = $input.first().json;\nconst n = 2;\nconst tmpl = {\n  reschedule_decline: {\n    1: 'Hi ' + d.first_name + ', we noticed you needed to reschedule. We\\'d love to find a time that works! Call or text us anytime.',\n    2: 'Hi ' + d.first_name + ', following up \\u2014 we have openings this week for your ' + d.service_type + ' service. Let us know!',\n    3: 'Hi ' + d.first_name + ', last check-in \\u2014 we\\'d love to get your ' + d.service_type + ' taken care of. Call or text. \\u2013 ' + d.company_name,\n  },\n  negative_feedback_resolved: {\n    1: 'Hi ' + d.first_name + ', we\\'re sorry your last experience wasn\\'t perfect. We\\'d love another chance. \\u2013 ' + d.company_name,\n    2: 'Hi ' + d.first_name + ', we\\'ve taken your feedback to heart. Book anytime! \\u2013 ' + d.company_name,\n    3: 'Hi ' + d.first_name + ', final outreach \\u2014 we\\'d love to earn your trust back. Call anytime. \\u2013 ' + d.company_name,\n  },\n  dormant_6mo: {\n    1: 'Hi ' + d.first_name + ', it\\'s been a while since your last ' + d.service_type + ' service! Time for a maintenance check? \\u2013 ' + d.company_name,\n    2: 'Hi ' + d.first_name + ', regular maintenance keeps things running. We have availability this week. \\u2013 ' + d.company_name,\n    3: 'Hi ' + d.first_name + ', last reminder \\u2014 call or text anytime to schedule. \\u2013 ' + d.company_name,\n  },\n};\nconst message = ((tmpl[d.entry_reason] || {})[n]) || ('Hi ' + d.first_name + ', checking in. \\u2013 ' + d.company_name);\nreturn [{ json: { ...d, message, message_number: n } }];\n"
+      },
+      "id": "54d06e4b-383f-4432-9fd9-4b4e64c7f373",
+      "name": "Build Msg 2",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4256,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "phone",
+              "leftValue": "={{ $json.phone }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "9dc17fb7-2b0d-4cb9-beb0-c679ee407b2f",
+      "name": "Has Phone? 2",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        4480,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "from": "<__PLACEHOLDER_VALUE__Twilio phone number (E.164, e.g. +15005550006)__>",
+        "to": "={{ $json.phone }}",
+        "message": "={{ $json.message }}",
+        "options": {}
+      },
+      "id": "ef2ec912-4c18-48ef-8ee4-596bb012ccc3",
+      "name": "Send SMS 2",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        4928,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "tableId": "nurture_log",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "company_id",
+              "fieldValue": "={{ $('Build Bundle').item.json.company_id }}"
+            },
+            {
+              "fieldId": "contact_id",
+              "fieldValue": "={{ $('Build Bundle').item.json.contact_id }}"
+            },
+            {
+              "fieldId": "entry_reason",
+              "fieldValue": "={{ $('Build Bundle').item.json.entry_reason }}"
+            },
+            {
+              "fieldId": "message_number",
+              "fieldValue": "2"
+            },
+            {
+              "fieldId": "sent_at",
+              "fieldValue": "={{ $now.toISO() }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "sent"
+            }
+          ]
+        }
+      },
+      "id": "839e00ec-d097-405b-9847-a084c0b0dbba",
+      "name": "Insert Log 2",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        5152,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 7,
+        "unit": "days"
+      },
+      "id": "b187adb8-8cd8-41a6-8786-814e2f8d7206",
+      "name": "Wait 7 Days",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        5376,
+        96
+      ],
+      "webhookId": "613e8c83-7a7e-48a0-9e4f-9fe78ae1e7fb"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "email",
+              "leftValue": "={{ $json.email }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "ee490d8b-c8f0-46a2-a55a-dd4833a564ff",
+      "name": "Has Email? 2",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        4704,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "mail",
+        "fromEmail": "<__PLACEHOLDER_VALUE__Sender email address__>",
+        "toEmail": "={{ $json.email }}",
+        "subject": "={{ $json.company_name }} - Following up",
+        "contentValue": "={{ $json.message }}",
+        "additionalFields": {}
+      },
+      "id": "9fe2e49f-460d-4b26-be8c-7b58946ca33b",
+      "name": "Send Email 2",
+      "type": "n8n-nodes-base.sendGrid",
+      "typeVersion": 1,
+      "position": [
+        4928,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "tableId": "nurture_log",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "company_id",
+              "fieldValue": "={{ $json.company_id }}"
+            },
+            {
+              "fieldId": "contact_id",
+              "fieldValue": "={{ $json.contact_id }}"
+            },
+            {
+              "fieldId": "entry_reason",
+              "fieldValue": "={{ $json.entry_reason }}"
+            },
+            {
+              "fieldId": "message_number",
+              "fieldValue": "0"
+            },
+            {
+              "fieldId": "sent_at",
+              "fieldValue": "={{ $now.toISO() }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "no_contact_info"
+            }
+          ]
+        }
+      },
+      "id": "d7d9d0bf-a4e1-4e13-a01d-e528424a9779",
+      "name": "Log No Contact 2",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        4928,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "jobs",
+        "filterType": "string",
+        "filterString": "=customer_id=eq.{{ $json.contact_id }}&company_id=eq.{{ $json.company_id }}&status=in.(unassigned,assigned)&limit=1"
+      },
+      "id": "ad0b0574-cddf-4938-96b4-6f57552da615",
+      "name": "Pre-check C",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        5600,
+        96
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst items = $input.all();\nconst bundle = $('Build Bundle').first().json;\nconst is_booked = items.some(i => !!(i.json && i.json.id));\nreturn [{ json: { ...bundle, is_booked } }];\n"
+      },
+      "id": "1b1b38f7-8359-485d-8a94-989f3db0654d",
+      "name": "Is Booked C",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5824,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "booked",
+              "leftValue": "={{ $json.is_booked }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "303bbaa0-39a3-4413-81dd-23e8ecb99d9c",
+      "name": "Booked? C",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        6048,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "tableId": "nurture_log",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "company_id",
+              "fieldValue": "={{ $json.company_id }}"
+            },
+            {
+              "fieldId": "contact_id",
+              "fieldValue": "={{ $json.contact_id }}"
+            },
+            {
+              "fieldId": "entry_reason",
+              "fieldValue": "={{ $json.entry_reason }}"
+            },
+            {
+              "fieldId": "message_number",
+              "fieldValue": "0"
+            },
+            {
+              "fieldId": "sent_at",
+              "fieldValue": "={{ $now.toISO() }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "stopped_booked"
+            }
+          ]
+        }
+      },
+      "id": "94caeb63-bd54-4161-a849-c79589a87409",
+      "name": "Log Stopped C",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        6272,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst d = $input.first().json;\nconst n = 3;\nconst tmpl = {\n  reschedule_decline: {\n    1: 'Hi ' + d.first_name + ', we noticed you needed to reschedule. We\\'d love to find a time that works! Call or text us anytime.',\n    2: 'Hi ' + d.first_name + ', following up \\u2014 we have openings this week for your ' + d.service_type + ' service. Let us know!',\n    3: 'Hi ' + d.first_name + ', last check-in \\u2014 we\\'d love to get your ' + d.service_type + ' taken care of. Call or text. \\u2013 ' + d.company_name,\n  },\n  negative_feedback_resolved: {\n    1: 'Hi ' + d.first_name + ', we\\'re sorry your last experience wasn\\'t perfect. We\\'d love another chance. \\u2013 ' + d.company_name,\n    2: 'Hi ' + d.first_name + ', we\\'ve taken your feedback to heart. Book anytime! \\u2013 ' + d.company_name,\n    3: 'Hi ' + d.first_name + ', final outreach \\u2014 we\\'d love to earn your trust back. Call anytime. \\u2013 ' + d.company_name,\n  },\n  dormant_6mo: {\n    1: 'Hi ' + d.first_name + ', it\\'s been a while since your last ' + d.service_type + ' service! Time for a maintenance check? \\u2013 ' + d.company_name,\n    2: 'Hi ' + d.first_name + ', regular maintenance keeps things running. We have availability this week. \\u2013 ' + d.company_name,\n    3: 'Hi ' + d.first_name + ', last reminder \\u2014 call or text anytime to schedule. \\u2013 ' + d.company_name,\n  },\n};\nconst message = ((tmpl[d.entry_reason] || {})[n]) || ('Hi ' + d.first_name + ', checking in. \\u2013 ' + d.company_name);\nreturn [{ json: { ...d, message, message_number: n } }];\n"
+      },
+      "id": "514a1ebb-74b7-4656-9117-043764c8e8bb",
+      "name": "Build Msg 3",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        6272,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "phone",
+              "leftValue": "={{ $json.phone }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "aa4404c6-1b73-4141-9b21-b520bb6e398c",
+      "name": "Has Phone? 3",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        6496,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "from": "<__PLACEHOLDER_VALUE__Twilio phone number (E.164, e.g. +15005550006)__>",
+        "to": "={{ $json.phone }}",
+        "message": "={{ $json.message }}",
+        "options": {}
+      },
+      "id": "507c1e87-ede2-4c43-9de7-0b0501a6cc15",
+      "name": "Send SMS 3",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        6944,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "tableId": "nurture_log",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "company_id",
+              "fieldValue": "={{ $('Build Bundle').item.json.company_id }}"
+            },
+            {
+              "fieldId": "contact_id",
+              "fieldValue": "={{ $('Build Bundle').item.json.contact_id }}"
+            },
+            {
+              "fieldId": "entry_reason",
+              "fieldValue": "={{ $('Build Bundle').item.json.entry_reason }}"
+            },
+            {
+              "fieldId": "message_number",
+              "fieldValue": "3"
+            },
+            {
+              "fieldId": "sent_at",
+              "fieldValue": "={{ $now.toISO() }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "sent"
+            }
+          ]
+        }
+      },
+      "id": "601299a6-6236-42ef-86b6-7be6cea55e6b",
+      "name": "Insert Log 3",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        7168,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "email",
+              "leftValue": "={{ $json.email }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "14f20512-b19e-49b7-bf0f-84f4617705c2",
+      "name": "Has Email? 3",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        6720,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "mail",
+        "fromEmail": "<__PLACEHOLDER_VALUE__Sender email address__>",
+        "toEmail": "={{ $json.email }}",
+        "subject": "={{ $json.company_name }} - Following up",
+        "contentValue": "={{ $json.message }}",
+        "additionalFields": {}
+      },
+      "id": "82af122f-cd27-4f36-a6a8-6da63e8bb2f7",
+      "name": "Send Email 3",
+      "type": "n8n-nodes-base.sendGrid",
+      "typeVersion": 1,
+      "position": [
+        6944,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "tableId": "nurture_log",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "company_id",
+              "fieldValue": "={{ $json.company_id }}"
+            },
+            {
+              "fieldId": "contact_id",
+              "fieldValue": "={{ $json.contact_id }}"
+            },
+            {
+              "fieldId": "entry_reason",
+              "fieldValue": "={{ $json.entry_reason }}"
+            },
+            {
+              "fieldId": "message_number",
+              "fieldValue": "0"
+            },
+            {
+              "fieldId": "sent_at",
+              "fieldValue": "={{ $now.toISO() }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "no_contact_info"
+            }
+          ]
+        }
+      },
+      "id": "6dac915a-065f-4c47-b5c2-03545b838a43",
+      "name": "Log No Contact 3",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        6944,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 12 * * *"
+            }
+          ]
+        }
+      },
+      "id": "6bb24bcc-2fc4-4389-aa88-6c0989b8eabb",
+      "name": "Daily 6 AM MDT",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        752
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "companies",
+        "returnAll": true,
+        "filterType": "string",
+        "filterString": "status=eq.active"
+      },
+      "id": "c16d0917-cbd4-4729-996b-0b012c3ae159",
+      "name": "Get Active Companies",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        224,
+        752
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst sixMonthsAgo = new Date(Date.now() - 6 * 30 * 24 * 60 * 60 * 1000).toISOString();\nreturn $input.all().map(item => ({\n  json: {\n    ...item.json,\n    company_id: item.json.id,\n    six_months_ago: sixMonthsAgo,\n  },\n}));\n"
+      },
+      "id": "2d1e44de-5f3d-4524-bf12-c031845eefcc",
+      "name": "Compute 6mo Ago",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        608
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "customers",
+        "returnAll": true,
+        "filterType": "string",
+        "filterString": "=company_id=eq.{{ $json.company_id }}&last_job_completed_at=lt.{{ $json.six_months_ago }}"
+      },
+      "id": "b4710f6c-7d5f-4807-8b9a-db445c664daf",
+      "name": "Get Dormant Contacts",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        896,
+        608
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "has_id",
+              "leftValue": "={{ $json.id }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "4b2f21f9-dd13-4be0-b099-c0358a4c832d",
+      "name": "Has Dormant Contacts?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1120,
+        608
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "1080242a-e9ea-401c-ad84-717044c99f92",
+      "name": "Loop Companies",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        448,
+        752
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "company_id",
+              "value": "={{ $json.company_id }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "contact_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "entry_reason",
+              "value": "dormant_6mo",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "51bec0fc-56d1-4ea0-8345-dd12ff4b06ab",
+      "name": "Build Nurture Payload",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1568,
+        608
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://runsable.app.n8n.cloud/webhook/sable-nurture-campaign",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"company_id\": $json.company_id, \"contact_id\": $json.contact_id, \"entry_reason\": $json.entry_reason } }}",
+        "options": {}
+      },
+      "id": "d453ac2a-3a61-441b-ba4e-e8cb7662324d",
+      "name": "POST to Nurture Webhook",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1792,
+        688
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "c509e498-41b8-444a-be17-cf4ce008c4d2",
+      "name": "Loop Contacts",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1344,
+        688
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Nurture Webhook": {
+      "main": [
+        [
+          {
+            "node": "company_id Present?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "company_id Present?": {
+      "main": [
+        [
+          {
+            "node": "Respond 200",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond 400",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond 200": {
+      "main": [
+        [
+          {
+            "node": "Get Contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Contact": {
+      "main": [
+        [
+          {
+            "node": "Get Company",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Company": {
+      "main": [
+        [
+          {
+            "node": "Get Last Job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Last Job": {
+      "main": [
+        [
+          {
+            "node": "Build Bundle",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Bundle": {
+      "main": [
+        [
+          {
+            "node": "Pre-check A",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pre-check A": {
+      "main": [
+        [
+          {
+            "node": "Is Booked A",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Booked A": {
+      "main": [
+        [
+          {
+            "node": "Booked? A",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Booked? A": {
+      "main": [
+        [
+          {
+            "node": "Log Stopped A",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Msg 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Msg 1": {
+      "main": [
+        [
+          {
+            "node": "Has Phone? 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Phone? 1": {
+      "main": [
+        [
+          {
+            "node": "Send SMS 1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Has Email? 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send SMS 1": {
+      "main": [
+        [
+          {
+            "node": "Insert Log 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Log 1": {
+      "main": [
+        [
+          {
+            "node": "Wait 3 Days",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 3 Days": {
+      "main": [
+        [
+          {
+            "node": "Pre-check B",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Email? 1": {
+      "main": [
+        [
+          {
+            "node": "Send Email 1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log No Contact 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email 1": {
+      "main": [
+        [
+          {
+            "node": "Insert Log 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pre-check B": {
+      "main": [
+        [
+          {
+            "node": "Is Booked B",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Booked B": {
+      "main": [
+        [
+          {
+            "node": "Booked? B",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Booked? B": {
+      "main": [
+        [
+          {
+            "node": "Log Stopped B",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Msg 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Msg 2": {
+      "main": [
+        [
+          {
+            "node": "Has Phone? 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Phone? 2": {
+      "main": [
+        [
+          {
+            "node": "Send SMS 2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Has Email? 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send SMS 2": {
+      "main": [
+        [
+          {
+            "node": "Insert Log 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Log 2": {
+      "main": [
+        [
+          {
+            "node": "Wait 7 Days",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 7 Days": {
+      "main": [
+        [
+          {
+            "node": "Pre-check C",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Email? 2": {
+      "main": [
+        [
+          {
+            "node": "Send Email 2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log No Contact 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email 2": {
+      "main": [
+        [
+          {
+            "node": "Insert Log 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pre-check C": {
+      "main": [
+        [
+          {
+            "node": "Is Booked C",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Booked C": {
+      "main": [
+        [
+          {
+            "node": "Booked? C",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Booked? C": {
+      "main": [
+        [
+          {
+            "node": "Log Stopped C",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Msg 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Msg 3": {
+      "main": [
+        [
+          {
+            "node": "Has Phone? 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Phone? 3": {
+      "main": [
+        [
+          {
+            "node": "Send SMS 3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Has Email? 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send SMS 3": {
+      "main": [
+        [
+          {
+            "node": "Insert Log 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Email? 3": {
+      "main": [
+        [
+          {
+            "node": "Send Email 3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log No Contact 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email 3": {
+      "main": [
+        [
+          {
+            "node": "Insert Log 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daily 6 AM MDT": {
+      "main": [
+        [
+          {
+            "node": "Get Active Companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Active Companies": {
+      "main": [
+        [
+          {
+            "node": "Loop Companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute 6mo Ago": {
+      "main": [
+        [
+          {
+            "node": "Get Dormant Contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Dormant Contacts": {
+      "main": [
+        [
+          {
+            "node": "Has Dormant Contacts?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Dormant Contacts?": {
+      "main": [
+        [
+          {
+            "node": "Loop Contacts",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Companies": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Compute 6mo Ago",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Nurture Payload": {
+      "main": [
+        [
+          {
+            "node": "POST to Nurture Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST to Nurture Webhook": {
+      "main": [
+        [
+          {
+            "node": "Loop Contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Contacts": {
+      "main": [
+        [
+          {
+            "node": "Loop Companies",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Nurture Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "211f0e00-84a9-474e-b775-633f2688d807",
+  "meta": {
+    "instanceId": "1f898378341ccb341e91602af9fe7508a6860290fcee6f09244305e2b8d071a0"
+  },
+  "nodeGroups": [],
+  "id": "B3grMsrKDrsl9CZF",
+  "tags": []
+}

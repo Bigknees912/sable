@@ -1,0 +1,495 @@
+{
+  "name": "WF4: \"Tech is on the Way\" Notification",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "sable-tech-otw",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "4f356abd-bc4f-46b1-b4fa-e80582ddfc9a",
+      "name": "Tech OTW Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        192
+      ],
+      "webhookId": "20c8ac9b-b838-4cc9-a773-b240ced2a071"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cid_check",
+              "leftValue": "={{ $json.body.company_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "574d42dd-d351-49c5-b824-b0a7271d8989",
+      "name": "company_id Present?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        224,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "jobs",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "keyValue": "={{ $json.body.job_id }}"
+            },
+            {
+              "keyName": "company_id",
+              "keyValue": "={{ $json.body.company_id }}"
+            }
+          ]
+        }
+      },
+      "id": "1a663b27-872d-48d3-b0a1-bd73cb32c107",
+      "name": "Get Job",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        448,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "customers",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "keyValue": "={{ $json.customer_id }}"
+            },
+            {
+              "keyName": "company_id",
+              "keyValue": "={{ $('Tech OTW Webhook').item.json.body.company_id }}"
+            }
+          ]
+        }
+      },
+      "id": "72742d9a-90ae-4ef1-8995-7a6f40add240",
+      "name": "Get Contact",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        672,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "companies",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "keyValue": "={{ $('Tech OTW Webhook').item.json.body.company_id }}"
+            }
+          ]
+        }
+      },
+      "id": "0839885d-733b-4baa-a698-8a911218aa73",
+      "name": "Get Company",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        896,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "\nconst webhook  = $('Tech OTW Webhook').item.json.body;\nconst job      = $('Get Job').item.json;\nconst contact  = $('Get Contact').item.json;\nconst company  = $('Get Company').item.json;\n\nconst lat = (webhook.tech_location_lat || '').toString().trim();\nconst lng = (webhook.tech_location_lng || '').toString().trim();\nconst maps_link = (lat && lng)\n  ? 'https://maps.google.com/?q=' + lat + ',' + lng\n  : '';\n\nconst timezone = (company.timezone || 'America/Denver').toString();\nconst scheduledDate = new Date(job.scheduled_at);\nconst formatted_time = scheduledDate.toLocaleString('en-US', {\n  timeZone: timezone,\n  hour: 'numeric',\n  minute: '2-digit',\n  hour12: true,\n});\n\nconst contactName = (contact.name || '').toString();\nconst first_name = contactName.split(' ')[0] || contactName;\n\nreturn {\n  json: {\n    first_name,\n    maps_link,\n    formatted_time,\n    tech_name:      (webhook.tech_name        || '').toString(),\n    company_name:   (company.name     || '').toString(),\n    service_type:   (job.service_type         || '').toString(),\n    customer_phone: (contact.phone            || '').toString(),\n    company_id:     (webhook.company_id       || '').toString(),\n    job_id:         (webhook.job_id           || '').toString(),\n  },\n};\n"
+      },
+      "id": "cdf1b53f-73d9-4ec4-86b4-bb4e03c4ed09",
+      "name": "Build Fields",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "phone_check",
+              "leftValue": "={{ $json.customer_phone }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "2c1a1766-88f0-46f9-94af-ae91e444caca",
+      "name": "Has Phone?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1344,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "\nconst d = $json;\nlet sms_body;\nif (d.maps_link) {\n  sms_body = 'Hi ' + d.first_name + ', ' + d.tech_name +\n    ' is on the way for your ' + d.service_type +\n    ' appointment (est. arrival around ' + d.formatted_time +\n    '). Track here: ' + d.maps_link + ' \u2013 ' + d.company_name;\n} else {\n  sms_body = 'Hi ' + d.first_name + ', ' + d.tech_name +\n    ' is on the way for your ' + d.service_type +\n    ' appointment (est. arrival around ' + d.formatted_time +\n    '). \u2013 ' + d.company_name;\n}\nreturn { json: { ...d, sms_body } };\n"
+      },
+      "id": "c89fbef8-a096-41aa-8363-b2b3abcfd671",
+      "name": "Build SMS Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1568,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "from": "<__PLACEHOLDER_VALUE__Twilio phone number (e.g. +15550001234)__>",
+        "to": "={{ $json.customer_phone }}",
+        "message": "={{ $json.sms_body }}",
+        "options": {}
+      },
+      "id": "303ef8d7-9cf0-4d70-8281-b592b2822033",
+      "name": "Send SMS",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        1792,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "jobs",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Build SMS Message').item.json.job_id }}"
+            },
+            {
+              "keyName": "company_id",
+              "condition": "eq",
+              "keyValue": "={{ $('Build SMS Message').item.json.company_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "tech_dispatched",
+              "fieldValue": "true"
+            },
+            {
+              "fieldId": "tech_dispatched_at",
+              "fieldValue": "={{ $now.toISO() }}"
+            }
+          ]
+        }
+      },
+      "id": "517c8dd9-c8f6-46a9-a068-375e21bbdb36",
+      "name": "Update Job",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2016,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": {
+          "status": "ok"
+        },
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "0bd5090f-1e52-436e-9302-fa0c84e39b99",
+      "name": "Respond 200",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        2240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "jobs",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.job_id }}"
+            },
+            {
+              "keyName": "company_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.company_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "tech_dispatched",
+              "fieldValue": "true"
+            },
+            {
+              "fieldId": "tech_dispatched_at",
+              "fieldValue": "={{ $now.toISO() }}"
+            }
+          ]
+        }
+      },
+      "id": "d96f468d-9c9a-47f4-8162-9f964ef274ce",
+      "name": "Update Job (No Phone)",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1568,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": {
+          "status": "ok"
+        },
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "694c3d6e-a14b-4bf3-a648-db26ad377941",
+      "name": "Respond 200 (No Phone)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1792,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": {
+          "error": "company_id is required"
+        },
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "a37870be-832b-438f-95ce-1eb109846cf7",
+      "name": "Respond 400",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        448,
+        288
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Tech OTW Webhook": {
+      "main": [
+        [
+          {
+            "node": "company_id Present?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "company_id Present?": {
+      "main": [
+        [
+          {
+            "node": "Get Job",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond 400",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Job": {
+      "main": [
+        [
+          {
+            "node": "Get Contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Contact": {
+      "main": [
+        [
+          {
+            "node": "Get Company",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Company": {
+      "main": [
+        [
+          {
+            "node": "Build Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Fields": {
+      "main": [
+        [
+          {
+            "node": "Has Phone?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Phone?": {
+      "main": [
+        [
+          {
+            "node": "Build SMS Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update Job (No Phone)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build SMS Message": {
+      "main": [
+        [
+          {
+            "node": "Send SMS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send SMS": {
+      "main": [
+        [
+          {
+            "node": "Update Job",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Job": {
+      "main": [
+        [
+          {
+            "node": "Respond 200",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Job (No Phone)": {
+      "main": [
+        [
+          {
+            "node": "Respond 200 (No Phone)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "f4b94f9d-3f8d-470a-8f7f-ab59ba160d00",
+  "meta": {
+    "instanceId": "1f898378341ccb341e91602af9fe7508a6860290fcee6f09244305e2b8d071a0"
+  },
+  "nodeGroups": [],
+  "id": "jPIEU62fGWACQDrm",
+  "tags": []
+}
