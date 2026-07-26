@@ -241,21 +241,54 @@
     },
     {
       "parameters": {
-        "resource": "mail",
-        "fromEmail": "<__PLACEHOLDER_VALUE__Sender email address__>",
-        "toEmail": "={{ $('Build Alert Message').item.json.owner_email }}",
-        "subject": "=Staffing Alert: {{ $('Build Alert Message').item.json.precip_pct }}% precipitation {{ $('Build Alert Message').item.json.tomorrow_label }}",
-        "contentValue": "={{ $('Build Alert Message').item.json.alert_message }}",
-        "additionalFields": {}
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "from",
+              "value": "<__PLACEHOLDER_VALUE__Resend From header, e.g. Sable <alerts@runsable.com>__>"
+            },
+            {
+              "name": "to",
+              "value": "={{ $('Build Alert Message').item.json.owner_email }}"
+            },
+            {
+              "name": "subject",
+              "value": "=Staffing Alert: {{ $('Build Alert Message').item.json.precip_pct }}% precipitation {{ $('Build Alert Message').item.json.tomorrow_label }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $('Build Alert Message').item.json.alert_message }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
       },
       "id": "ae60321f-3fa5-48fe-8b9f-960ce53f3842",
       "name": "Email Alert (A)",
-      "type": "n8n-nodes-base.sendGrid",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
         2464,
         176
-      ]
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "Resend"
+        }
+      }
     },
     {
       "parameters": {
@@ -304,21 +337,54 @@
     },
     {
       "parameters": {
-        "resource": "mail",
-        "fromEmail": "<__PLACEHOLDER_VALUE__Sender email address__>",
-        "toEmail": "={{ $json.owner_email }}",
-        "subject": "=Staffing Alert: {{ $json.precip_pct }}% precipitation {{ $json.tomorrow_label }}",
-        "contentValue": "={{ $json.alert_message }}",
-        "additionalFields": {}
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "from",
+              "value": "<__PLACEHOLDER_VALUE__Resend From header, e.g. Sable <alerts@runsable.com>__>"
+            },
+            {
+              "name": "to",
+              "value": "={{ $json.owner_email }}"
+            },
+            {
+              "name": "subject",
+              "value": "=Staffing Alert: {{ $json.precip_pct }}% precipitation {{ $json.tomorrow_label }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.alert_message }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
       },
       "id": "509b5416-cf84-4ea1-89da-8c100ed783eb",
       "name": "Email Alert (B)",
-      "type": "n8n-nodes-base.sendGrid",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
         2240,
         192
-      ]
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "Resend"
+        }
+      }
     }
   ],
   "pinData": {},

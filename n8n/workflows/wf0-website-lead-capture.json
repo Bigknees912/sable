@@ -210,22 +210,54 @@
     },
     {
       "parameters": {
-        "resource": "mail",
-        "fromEmail": "<__PLACEHOLDER_VALUE__Sender email (e.g. leads@runsable.com)__>",
-        "fromName": "Sable Leads",
-        "toEmail": "<__PLACEHOLDER_VALUE__Your notification email address__>",
-        "subject": "=New demo request: {{ $json.business_name }} \u2014 {{ $json.trade_type }}",
-        "contentValue": "=New lead from your website!\n\nBusiness: {{ $json.business_name }}\nContact: {{ $json.contact_name }}\nPhone: {{ $json.phone }}\nEmail: {{ $json.email }}\nTrade: {{ $json.trade_type }}\nTeam size: {{ $json.team_size }} trucks/technicians\n\nPain point:\n\"{{ $json.pain_point }}\"\n\nSource: Website survey\n\n\u2013 Sable",
-        "additionalFields": {}
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "from",
+              "value": "Sable Leads <__PLACEHOLDER_VALUE__Resend From header, e.g. Sable <alerts@runsable.com>__>"
+            },
+            {
+              "name": "to",
+              "value": "<__PLACEHOLDER_VALUE__Your notification email address__>"
+            },
+            {
+              "name": "subject",
+              "value": "=New demo request: {{ $json.business_name }} \u2014 {{ $json.trade_type }}"
+            },
+            {
+              "name": "text",
+              "value": "=New lead from your website!\n\nBusiness: {{ $json.business_name }}\nContact: {{ $json.contact_name }}\nPhone: {{ $json.phone }}\nEmail: {{ $json.email }}\nTrade: {{ $json.trade_type }}\nTeam size: {{ $json.team_size }} trucks/technicians\n\nPain point:\n\"{{ $json.pain_point }}\"\n\nSource: Website survey\n\n\u2013 Sable"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
       },
       "id": "f9585ae1-3d95-4e3a-a832-643848dc8edc",
       "name": "Notify Owner",
-      "type": "n8n-nodes-base.sendGrid",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
         672,
         0
-      ]
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "Resend"
+        }
+      }
     },
     {
       "parameters": {
@@ -302,22 +334,54 @@
     },
     {
       "parameters": {
-        "resource": "mail",
-        "fromEmail": "<__PLACEHOLDER_VALUE__Your personal email \u2014 replies go here (e.g. ryan@runsable.com)__>",
-        "fromName": "<__PLACEHOLDER_VALUE__Your first name (e.g. Ryan)__>",
-        "toEmail": "={{ $('Carry Data').item.json.email }}",
-        "subject": "Quick follow-up on your Sable demo request",
-        "contentValue": "=Hi {{ $('Carry Data').item.json.contact_name }},\n\nJust following up on your note about {{ $('Carry Data').item.json.pain_point }} \u2014 still looking for a way to stop missing calls?\n\nHappy to show you a 5-minute demo whenever works for you, no pressure either way. Just reply to this email and we\u2019ll find a time.\n\n\u2013 Ryan\nFounder, Sable\nrunsable.com",
-        "additionalFields": {}
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "from",
+              "value": "<__PLACEHOLDER_VALUE__Your first name (e.g. Ryan)__> <__PLACEHOLDER_VALUE__Resend From header, e.g. Sable <alerts@runsable.com>__>"
+            },
+            {
+              "name": "to",
+              "value": "={{ $('Carry Data').item.json.email }}"
+            },
+            {
+              "name": "subject",
+              "value": "Quick follow-up on your Sable demo request"
+            },
+            {
+              "name": "text",
+              "value": "=Hi {{ $('Carry Data').item.json.contact_name }},\n\nJust following up on your note about {{ $('Carry Data').item.json.pain_point }} \u2014 still looking for a way to stop missing calls?\n\nHappy to show you a 5-minute demo whenever works for you, no pressure either way. Just reply to this email and we\u2019ll find a time.\n\n\u2013 Ryan\nFounder, Sable\nrunsable.com"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
       },
       "id": "3779f5b6-ac1a-494f-ab6f-1c769240f4ce",
       "name": "Follow-up Email",
-      "type": "n8n-nodes-base.sendGrid",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
         1568,
         0
-      ]
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "Resend"
+        }
+      }
     },
     {
       "parameters": {

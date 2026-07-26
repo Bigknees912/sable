@@ -404,21 +404,54 @@
     },
     {
       "parameters": {
-        "resource": "mail",
-        "fromEmail": "<__PLACEHOLDER_VALUE__Sender email address__>",
-        "toEmail": "={{ $json.email }}",
-        "subject": "={{ $json.company_name }} - Following up",
-        "contentValue": "={{ $json.message }}",
-        "additionalFields": {}
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "from",
+              "value": "<__PLACEHOLDER_VALUE__Resend From header, e.g. Sable <alerts@runsable.com>__>"
+            },
+            {
+              "name": "to",
+              "value": "={{ $json.email }}"
+            },
+            {
+              "name": "subject",
+              "value": "={{ $json.company_name }} - Following up"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.message }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
       },
       "id": "b009b704-883c-49a0-b5c2-49d9ce5588ce",
       "name": "Send Email 1",
-      "type": "n8n-nodes-base.sendGrid",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
         2912,
         192
-      ]
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "Resend"
+        }
+      }
     },
     {
       "parameters": {
@@ -735,21 +768,54 @@
     },
     {
       "parameters": {
-        "resource": "mail",
-        "fromEmail": "<__PLACEHOLDER_VALUE__Sender email address__>",
-        "toEmail": "={{ $json.email }}",
-        "subject": "={{ $json.company_name }} - Following up",
-        "contentValue": "={{ $json.message }}",
-        "additionalFields": {}
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "from",
+              "value": "<__PLACEHOLDER_VALUE__Resend From header, e.g. Sable <alerts@runsable.com>__>"
+            },
+            {
+              "name": "to",
+              "value": "={{ $json.email }}"
+            },
+            {
+              "name": "subject",
+              "value": "={{ $json.company_name }} - Following up"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.message }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
       },
       "id": "9fe2e49f-460d-4b26-be8c-7b58946ca33b",
       "name": "Send Email 2",
-      "type": "n8n-nodes-base.sendGrid",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
         4928,
         192
-      ]
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "Resend"
+        }
+      }
     },
     {
       "parameters": {
@@ -1032,21 +1098,54 @@
     },
     {
       "parameters": {
-        "resource": "mail",
-        "fromEmail": "<__PLACEHOLDER_VALUE__Sender email address__>",
-        "toEmail": "={{ $json.email }}",
-        "subject": "={{ $json.company_name }} - Following up",
-        "contentValue": "={{ $json.message }}",
-        "additionalFields": {}
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "from",
+              "value": "<__PLACEHOLDER_VALUE__Resend From header, e.g. Sable <alerts@runsable.com>__>"
+            },
+            {
+              "name": "to",
+              "value": "={{ $json.email }}"
+            },
+            {
+              "name": "subject",
+              "value": "={{ $json.company_name }} - Following up"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.message }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
       },
       "id": "82af122f-cd27-4f36-a6a8-6da63e8bb2f7",
       "name": "Send Email 3",
-      "type": "n8n-nodes-base.sendGrid",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
         6944,
         192
-      ]
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "Resend"
+        }
+      }
     },
     {
       "parameters": {

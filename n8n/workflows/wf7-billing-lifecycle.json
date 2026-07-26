@@ -224,21 +224,54 @@
     },
     {
       "parameters": {
-        "resource": "mail",
-        "fromEmail": "<__PLACEHOLDER_VALUE__Sender email address__>",
-        "toEmail": "={{ $json.owner_email }}",
-        "subject": "Your Sable trial ends in 2 days",
-        "contentValue": "=Your Sable trial ends on {{ $json.trial_end_date }}. Add billing to keep your service: {{ $json.billing_link }}",
-        "additionalFields": {}
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "from",
+              "value": "<__PLACEHOLDER_VALUE__Resend From header, e.g. Sable <alerts@runsable.com>__>"
+            },
+            {
+              "name": "to",
+              "value": "={{ $json.owner_email }}"
+            },
+            {
+              "name": "subject",
+              "value": "Your Sable trial ends in 2 days"
+            },
+            {
+              "name": "text",
+              "value": "=Your Sable trial ends on {{ $json.trial_end_date }}. Add billing to keep your service: {{ $json.billing_link }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
       },
       "id": "abf25ba2-9356-4471-b8d2-8afea083d9a9",
       "name": "Trial Email",
-      "type": "n8n-nodes-base.sendGrid",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
         1792,
         0
-      ]
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "Resend"
+        }
+      }
     },
     {
       "parameters": {
@@ -402,21 +435,54 @@
     },
     {
       "parameters": {
-        "resource": "mail",
-        "fromEmail": "<__PLACEHOLDER_VALUE__Sender email address__>",
-        "toEmail": "={{ $('Set Bundle').item.json.owner_email }}",
-        "subject": "Sable: Payment failed \u2014 action required",
-        "contentValue": "=Your Sable payment failed. Update your billing to restore service: {{ $('Set Bundle').item.json.billing_link }}",
-        "additionalFields": {}
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "from",
+              "value": "<__PLACEHOLDER_VALUE__Resend From header, e.g. Sable <alerts@runsable.com>__>"
+            },
+            {
+              "name": "to",
+              "value": "={{ $('Set Bundle').item.json.owner_email }}"
+            },
+            {
+              "name": "subject",
+              "value": "Sable: Payment failed \u2014 action required"
+            },
+            {
+              "name": "text",
+              "value": "=Your Sable payment failed. Update your billing to restore service: {{ $('Set Bundle').item.json.billing_link }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
       },
       "id": "c898976e-39ef-42d2-adc8-48b5c1ac5ac5",
       "name": "Payment Failed Email",
-      "type": "n8n-nodes-base.sendGrid",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
         1792,
         384
-      ]
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "Resend"
+        }
+      }
     },
     {
       "parameters": {
@@ -588,21 +654,54 @@
     },
     {
       "parameters": {
-        "resource": "mail",
-        "fromEmail": "<__PLACEHOLDER_VALUE__Sender email address__>",
-        "toEmail": "<__PLACEHOLDER_VALUE__Platform owner email address__>",
-        "subject": "=Churn alert: {{ $('Get Cancel Reason').item.json.company_name }} cancelled",
-        "contentValue": "=Company: {{ $('Get Cancel Reason').item.json.company_name }}\nCompany ID: {{ $('Get Cancel Reason').item.json.company_id }}\nCancellation Reason: {{ $('Get Cancel Reason').item.json.cancellation_reason }}\nStripe Customer: {{ $('Get Cancel Reason').item.json.stripe_customer_id }}\n\nData preserved \u2014 manual follow-up recommended.",
-        "additionalFields": {}
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "from",
+              "value": "<__PLACEHOLDER_VALUE__Resend From header, e.g. Sable <alerts@runsable.com>__>"
+            },
+            {
+              "name": "to",
+              "value": "<__PLACEHOLDER_VALUE__Platform owner email address__>"
+            },
+            {
+              "name": "subject",
+              "value": "=Churn alert: {{ $('Get Cancel Reason').item.json.company_name }} cancelled"
+            },
+            {
+              "name": "text",
+              "value": "=Company: {{ $('Get Cancel Reason').item.json.company_name }}\nCompany ID: {{ $('Get Cancel Reason').item.json.company_id }}\nCancellation Reason: {{ $('Get Cancel Reason').item.json.cancellation_reason }}\nStripe Customer: {{ $('Get Cancel Reason').item.json.stripe_customer_id }}\n\nData preserved \u2014 manual follow-up recommended."
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
       },
       "id": "a6dd0223-a0d2-4a82-817b-8d2fc1da1e73",
       "name": "Platform Email Alert",
-      "type": "n8n-nodes-base.sendGrid",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
         2016,
         768
-      ]
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "Resend"
+        }
+      }
     }
   ],
   "pinData": {},

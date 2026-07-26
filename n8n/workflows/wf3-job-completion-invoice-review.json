@@ -557,209 +557,54 @@
     },
     {
       "parameters": {
-        "resource": "mail",
-        "fromEmail": "<__PLACEHOLDER_VALUE__Invoice sender email (e.g. billing@runsable.com)__>",
-        "fromName": "={{ $json.company_name }} via Sable",
-        "toEmail": "={{ $json.customer_email }}",
-        "subject": "=Your invoice for {{ $json.service_type }} \u2013 {{ $json.company_name }}",
-        "contentValue": "=Hi {{ $json.customer_name }},\n\nThank you for choosing {{ $json.company_name }}! Your {{ $json.service_type }} service is complete.\n\n{{ $json.invoice_url ? 'View your invoice: ' + $json.invoice_url : 'Your invoice will be sent separately by our team.' }}\n\nWe appreciate your business!\n\n\u2013 The {{ $json.company_name }} Team",
-        "additionalFields": {}
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "from",
+              "value": "={{ $json.company_name }} via Sable <__PLACEHOLDER_VALUE__Resend From header, e.g. Sable <alerts@runsable.com>__>"
+            },
+            {
+              "name": "to",
+              "value": "={{ $json.customer_email }}"
+            },
+            {
+              "name": "subject",
+              "value": "=Your invoice for {{ $json.service_type }} \u2013 {{ $json.company_name }}"
+            },
+            {
+              "name": "text",
+              "value": "=Hi {{ $json.customer_name }},\n\nThank you for choosing {{ $json.company_name }}! Your {{ $json.service_type }} service is complete.\n\n{{ $json.invoice_url ? 'View your invoice: ' + $json.invoice_url : 'Your invoice will be sent separately by our team.' }}\n\nWe appreciate your business!\n\n\u2013 The {{ $json.company_name }} Team"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
       },
       "id": "a6c6d449-7d3e-4b70-898f-44b9c32f4d09",
       "name": "Send Invoice Email",
-      "type": "n8n-nodes-base.sendGrid",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
         2912,
         96
-      ]
-    },
-    {
-      "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "1",
-              "name": "company_id",
-              "value": "={{ $('Merge Invoice Paths').item.json.company_id }}",
-              "type": "string"
-            },
-            {
-              "id": "2",
-              "name": "job_id",
-              "value": "={{ $('Merge Invoice Paths').item.json.job_id }}",
-              "type": "string"
-            },
-            {
-              "id": "3",
-              "name": "customer_name",
-              "value": "={{ $('Merge Invoice Paths').item.json.customer_name }}",
-              "type": "string"
-            },
-            {
-              "id": "4",
-              "name": "customer_phone",
-              "value": "={{ $('Merge Invoice Paths').item.json.customer_phone }}",
-              "type": "string"
-            },
-            {
-              "id": "5",
-              "name": "company_name",
-              "value": "={{ $('Merge Invoice Paths').item.json.company_name }}",
-              "type": "string"
-            },
-            {
-              "id": "6",
-              "name": "google_review_url",
-              "value": "={{ $('Merge Invoice Paths').item.json.google_review_url }}",
-              "type": "string"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "id": "4cd6aeb2-f90f-422d-9c7f-d06ff7ecf22d",
-      "name": "Carry Data Before Wait",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.5,
-      "position": [
-        3136,
-        96
-      ]
-    },
-    {
-      "parameters": {
-        "amount": 2,
-        "unit": "hours"
-      },
-      "id": "fcfea38a-6c29-4612-a05a-493a88f914b0",
-      "name": "Wait 2 Hours",
-      "type": "n8n-nodes-base.wait",
-      "typeVersion": 1.1,
-      "position": [
-        3360,
-        96
       ],
-      "webhookId": "7589441e-d588-4d69-8651-0c735e1eb938"
-    },
-    {
-      "parameters": {
-        "operation": "getAll",
-        "tableId": "jobs",
-        "limit": 1,
-        "matchType": "allFilters",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "id",
-              "condition": "eq",
-              "keyValue": "={{ $json.job_id }}"
-            },
-            {
-              "keyName": "company_id",
-              "condition": "eq",
-              "keyValue": "={{ $json.company_id }}"
-            }
-          ]
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "Resend"
         }
-      },
-      "id": "7d3ea6a3-08cb-4542-b00d-56bc9db9749b",
-      "name": "Recheck Job Feedback",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [
-        3584,
-        96
-      ]
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": false,
-            "leftValue": "",
-            "typeValidation": "loose",
-            "version": 2
-          },
-          "conditions": [
-            {
-              "id": "neg_fb",
-              "leftValue": "={{ $json.negative_feedback }}",
-              "operator": {
-                "type": "boolean",
-                "operation": "true"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "id": "63b6c445-e2b0-4c61-9907-857da23b13ee",
-      "name": "Negative Feedback?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        3808,
-        96
-      ]
-    },
-    {
-      "parameters": {
-        "from": "<__PLACEHOLDER_VALUE__Twilio phone number (E.164, e.g. +15005550006)__>",
-        "to": "={{ $('Carry Data Before Wait').item.json.customer_phone }}",
-        "message": "=Hi {{ $('Carry Data Before Wait').item.json.customer_name }}, thank you for choosing {{ $('Carry Data Before Wait').item.json.company_name }}! We'd love your feedback \u2014 leave us a quick Google review: {{ $('Carry Data Before Wait').item.json.google_review_url }}. Thank you!",
-        "options": {}
-      },
-      "id": "9ca860ac-cead-4c23-8a0d-901072dca9fa",
-      "name": "Send Review SMS",
-      "type": "n8n-nodes-base.twilio",
-      "typeVersion": 1,
-      "position": [
-        4032,
-        96
-      ]
-    },
-    {
-      "parameters": {
-        "operation": "update",
-        "tableId": "jobs",
-        "matchType": "allFilters",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "id",
-              "condition": "eq",
-              "keyValue": "={{ $('Carry Data Before Wait').item.json.job_id }}"
-            },
-            {
-              "keyName": "company_id",
-              "condition": "eq",
-              "keyValue": "={{ $('Carry Data Before Wait').item.json.company_id }}"
-            }
-          ]
-        },
-        "fieldsUi": {
-          "fieldValues": [
-            {
-              "fieldId": "review_requested",
-              "fieldValue": "true"
-            },
-            {
-              "fieldId": "review_requested_at",
-              "fieldValue": "={{ $now.toISO() }}"
-            }
-          ]
-        }
-      },
-      "id": "9568e0fe-ccf3-4811-836a-ead8705c8a34",
-      "name": "Update Job: Review Requested",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [
-        4256,
-        96
-      ]
+      }
     }
   ],
   "pinData": {},
@@ -934,69 +779,7 @@
     },
     "Send Invoice Email": {
       "main": [
-        [
-          {
-            "node": "Carry Data Before Wait",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Carry Data Before Wait": {
-      "main": [
-        [
-          {
-            "node": "Wait 2 Hours",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Wait 2 Hours": {
-      "main": [
-        [
-          {
-            "node": "Recheck Job Feedback",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Recheck Job Feedback": {
-      "main": [
-        [
-          {
-            "node": "Negative Feedback?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Negative Feedback?": {
-      "main": [
-        [],
-        [
-          {
-            "node": "Send Review SMS",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Send Review SMS": {
-      "main": [
-        [
-          {
-            "node": "Update Job: Review Requested",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        []
       ]
     }
   },

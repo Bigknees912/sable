@@ -582,22 +582,54 @@
     },
     {
       "parameters": {
-        "resource": "mail",
-        "fromEmail": "<__PLACEHOLDER_VALUE__Alert sender email (e.g. alerts@runsable.com)__>",
-        "fromName": "Sable Alerts",
-        "toEmail": "={{ $('Set Bundle').item.json.owner_email }}",
-        "subject": "=Reschedule Request: {{ $('Set Bundle').item.json.customer_name }}",
-        "contentValue": "={{ $('Set Bundle').item.json.customer_name }} has requested to reschedule their appointment.\n\nJob ID: {{ $('Set Bundle').item.json.job_id }}\nCompany: {{ $('Set Bundle').item.json.company_name }}\n\nPlease update their appointment in the Sable dashboard.\n\n\u2013 Sable",
-        "additionalFields": {}
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "from",
+              "value": "Sable Alerts <__PLACEHOLDER_VALUE__Resend From header, e.g. Sable <alerts@runsable.com>__>"
+            },
+            {
+              "name": "to",
+              "value": "={{ $('Set Bundle').item.json.owner_email }}"
+            },
+            {
+              "name": "subject",
+              "value": "=Reschedule Request: {{ $('Set Bundle').item.json.customer_name }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $('Set Bundle').item.json.customer_name }} has requested to reschedule their appointment.\n\nJob ID: {{ $('Set Bundle').item.json.job_id }}\nCompany: {{ $('Set Bundle').item.json.company_name }}\n\nPlease update their appointment in the Sable dashboard.\n\n\u2013 Sable"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
       },
       "id": "ca0e635c-9535-42f1-a6af-e5d4dc8a84f8",
       "name": "Email: Reschedule Alert",
-      "type": "n8n-nodes-base.sendGrid",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
         2688,
         192
-      ]
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "Resend"
+        }
+      }
     },
     {
       "parameters": {

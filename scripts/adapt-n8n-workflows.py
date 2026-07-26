@@ -67,6 +67,101 @@ def rewrite_strings(obj, receivers):
     return obj
 
 
+def expr_concat(*parts):
+    """Join literal/expression fragments into one n8n value.
+
+    n8n values are either plain literals or '=' -prefixed expressions; you
+    can't mix them, so if any fragment is an expression the whole result has
+    to become one.
+    """
+    parts = [p for p in parts if p]
+    if not parts:
+        return ""
+    if not any(p.startswith("=") for p in parts):
+        return "".join(parts)
+    out = "="
+    for p in parts:
+        out += p[1:] if p.startswith("=") else p.replace("{{", "\\{\\{")
+    return out
+
+
+def sendgrid_to_resend(node):
+    """Rewrite a SendGrid node into an HTTP Request against the Resend API.
+
+    The project sends email through Resend (RESEND_API_KEY); the authored
+    workflows all used SendGrid nodes, which would need a second ESP account.
+    Credential: an n8n 'Header Auth' credential named "Resend" holding
+    Authorization: Bearer <RESEND_API_KEY>.
+    """
+    p = node["parameters"]
+    from_email = p.get("fromEmail", "")
+    from_name = p.get("fromName", "")
+    if from_email.startswith("<__PLACEHOLDER_VALUE__"):
+        # Don't wrap a placeholder in angle brackets - it already has them,
+        # and Resend wants one 'Name <addr>' string. Ask for the whole header.
+        sender = '<__PLACEHOLDER_VALUE__Resend From header, e.g. Sable <alerts@runsable.com>__>'
+        if from_name:
+            sender = expr_concat(from_name, " ", sender)
+    elif from_name:
+        sender = expr_concat(from_name, " <", from_email, ">")
+    else:
+        sender = from_email
+
+    node["type"] = "n8n-nodes-base.httpRequest"
+    node["typeVersion"] = 4.2
+    node["parameters"] = {
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": True,
+        "contentType": "json",
+        "specifyBody": "keypair",
+        "bodyParameters": {
+            "parameters": [
+                {"name": "from", "value": sender},
+                {"name": "to", "value": p.get("toEmail", "")},
+                {"name": "subject", "value": p.get("subject", "")},
+                {"name": "text", "value": p.get("contentValue", "")},
+            ]
+        },
+        # A failed courtesy email must never fail the whole run.
+        "options": {"response": {"response": {"neverError": True}}},
+    }
+    node["credentials"] = {"httpHeaderAuth": {"name": "Resend"}}
+    return node
+
+
+def drop_nodes(d, names):
+    """Remove nodes and every connection into or out of them."""
+    names = set(names)
+    d["nodes"] = [n for n in d["nodes"] if n["name"] not in names]
+    conns = {}
+    for src, conn in d.get("connections", {}).items():
+        if src in names:
+            continue
+        branches = []
+        for branch in conn.get("main", []):
+            branches.append([l for l in (branch or []) if l["node"] not in names])
+        conns[src] = {"main": branches}
+    d["connections"] = conns
+    return d
+
+
+# WF3's review-request branch duplicates the in-app send-review-request
+# automation, which already suppresses the review after negative feedback
+# (migration 070). Keeping both double-texts the customer. The invoice branch
+# ahead of it is unique to n8n, so only the review tail is removed.
+WF3_REVIEW_BRANCH = [
+    "Carry Data Before Wait",
+    "Wait 2 Hours",
+    "Recheck Job Feedback",
+    "Negative Feedback?",
+    "Send Review SMS",
+    "Update Job: Review Requested",
+]
+
+
 def upstream_map(d):
     """node name -> set of immediate predecessor node names"""
     up = {}
@@ -148,6 +243,13 @@ def adapt(path):
                 filt = json.dumps(p.get("filters", {})) + str(p.get("filterString", ""))
                 if "stripe_customer_id" in filt and p.get("operation") != "update":
                     p["tableId"] = "companies_with_billing"
+
+    if name.startswith("WF3:"):
+        d = drop_nodes(d, WF3_REVIEW_BRANCH)
+
+    for n in d["nodes"]:
+        if n["type"] == "n8n-nodes-base.sendGrid":
+            sendgrid_to_resend(n)
 
     return name, d
 

@@ -516,22 +516,54 @@
     },
     {
       "parameters": {
-        "resource": "mail",
-        "fromEmail": "<__PLACEHOLDER_VALUE__Alert sender email (e.g. alerts@runsable.com)__>",
-        "fromName": "Sable Alerts",
-        "toEmail": "={{ $json.owner_email }}",
-        "subject": "=\ud83d\udea8 Hot Lead: {{ $json.contact_name }} \u2013 Emergency",
-        "contentValue": "=New emergency lead received for {{ $json.company_name }}.\n\nName: {{ $json.contact_name }}\nSource: {{ $json.source }}\nUrgency: Emergency\n\nLog in to Sable to view and follow up immediately.\n\n\u2013 Sable",
-        "additionalFields": {}
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "from",
+              "value": "Sable Alerts <__PLACEHOLDER_VALUE__Resend From header, e.g. Sable <alerts@runsable.com>__>"
+            },
+            {
+              "name": "to",
+              "value": "={{ $json.owner_email }}"
+            },
+            {
+              "name": "subject",
+              "value": "=\ud83d\udea8 Hot Lead: {{ $json.contact_name }} \u2013 Emergency"
+            },
+            {
+              "name": "text",
+              "value": "=New emergency lead received for {{ $json.company_name }}.\n\nName: {{ $json.contact_name }}\nSource: {{ $json.source }}\nUrgency: Emergency\n\nLog in to Sable to view and follow up immediately.\n\n\u2013 Sable"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
       },
       "id": "f76507ce-88cc-4e3e-bee5-37cbb4c53cbd",
       "name": "Email: Hot Lead Alert",
-      "type": "n8n-nodes-base.sendGrid",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
         2912,
         192
-      ]
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "Resend"
+        }
+      }
     }
   ],
   "pinData": {},

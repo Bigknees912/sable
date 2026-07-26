@@ -20,24 +20,18 @@ Instance: `https://runsable.app.n8n.cloud`
 | `wf6-weather-staffing-alert.json` | Daily 05:00 MDT | Open-Meteo forecast → staffing alert at ≥25% precip |
 | `wf7-billing-lifecycle.json` | Stripe events | Trial ending, payment failed, cancelled |
 
-## Before you import: two things will bite you
+## Overlap with the in-app automations
 
-**1. These duplicate three things the app already does.** Turning them all on
-sends customers the same message twice. Pick one owner per job and disable the
-other:
+These workflows cover ground the Supabase edge functions already cover. Two of
+the three are resolved in this copy; one is still yours to decide.
 
-| Overlap | In-app (Supabase) | n8n | Recommendation |
+| Overlap | In-app (Supabase) | n8n | Status |
 |---|---|---|---|
-| Review request | `send-review-request` + `automation_runs` + the migration-070 trigger that cancels reviews on negative feedback | WF3 "Send Review SMS" | Keep the in-app one — it already suppresses reviews after negative feedback. Delete WF3's review branch, keep its invoice branch. |
-| "On the way" SMS | `send-on-the-way-sms` edge function | WF4 | Pick one. The edge function already includes the customer portal link. |
-| Subscription events | `stripe-webhook` (writes `subscriptions`) | WF7 (writes `companies.status`) | Complementary, but both fire on `customer.subscription.deleted`. Keep both only if you want the churn alert; they write different tables so they won't fight. |
+| Review request | `send-review-request` + `automation_runs` + the migration-070 trigger that cancels reviews on negative feedback | WF3's review tail | **Resolved.** WF3's review branch (wait 2h → recheck feedback → review SMS) is removed; its invoice branch is kept. The in-app path wins because it already suppresses reviews after negative feedback. |
+| "On the way" SMS | `send-on-the-way-sms` edge function | WF4 | **Still yours to pick.** Both send the same text. The edge function also includes the customer portal link; WF4 includes a live map pin. Running both double-texts every customer — disable one before activating WF4. |
+| Subscription events | `stripe-webhook` (writes `subscriptions`) | WF7 (writes `companies.status`) | **Safe to run both.** They both fire on `customer.subscription.deleted` but write different tables, so they complement rather than fight. WF7 adds the churn alert. |
 
-This is the "n8n double-send" item from the system audit. It is not resolved
-by importing — it's resolved by you choosing.
-
-**2. Every email node is SendGrid; we use Resend.** The `sendGrid` nodes need
-either a SendGrid account or swapping to an HTTP Request node against the
-Resend API. Nothing will send until that's decided.
+This is the "n8n double-send" item from the system audit.
 
 ## Credentials to create in n8n
 
@@ -47,11 +41,15 @@ Resend API. Nothing will send until that's decided.
 - **Twilio** — same account/token/number as the Supabase edge functions.
 - **Stripe** — same secret key.
 - **Slack** (optional) — only used when `companies.owner_slack_channel` is set.
-- **SendGrid** — see the caveat above.
+- **Resend** — an n8n **Header Auth** credential *named exactly `Resend`*,
+  with name `Authorization` and value `Bearer <RESEND_API_KEY>`. All 14 email
+  nodes were converted from SendGrid to HTTP Request calls against
+  `https://api.resend.com/emails` and expect that credential.
 
 Placeholders reading `<__PLACEHOLDER_VALUE__...__>` must be filled in on
-import: the Twilio from-number, sender email addresses, the billing portal
-URL, and the platform owner's Slack channel / email in WF7.
+import: the Twilio from-number, the Resend `From` header (needs a domain
+verified in Resend), the billing portal URL, and the platform owner's Slack
+channel / email in WF7.
 
 ## Per-company setup
 
@@ -93,6 +91,13 @@ Schema reconciliation (migrations 072–074):
 Only references to real Supabase rows were renamed. Workflow-internal bundle
 keys (`d.company_name`, `$('Set Bundle').item.json.owner_email`) deliberately
 keep their original names.
+
+Behaviour changes:
+
+- **All 14 SendGrid nodes → HTTP Request against the Resend API**, since this
+  project sends through Resend. Email failures are set to `neverError` so a
+  bounced courtesy email can't fail an invoice run.
+- **WF3's review branch removed** — see the overlap table above.
 
 ## Regenerating
 
