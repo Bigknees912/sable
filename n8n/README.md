@@ -5,6 +5,9 @@ copy. The JSON in `workflows/` has been **rewritten to match this database** —
 do not re-import the originals, they were written against an idealised schema
 and every one of them would fail at runtime. See "What was changed" below.
 
+**👉 To set up these workflows in n8n, start with [SETUP.md](SETUP.md)** for a
+credentials checklist, how to create them, and post-import configuration.
+
 Instance: `https://runsable.app.n8n.cloud`
 
 | File | Trigger | What it does |
