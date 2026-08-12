@@ -29,9 +29,15 @@ values
   ('b0000001-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'rls-owner-b@test.com', crypt('x', gen_salt('bf')), now(), now(), now(), '{}', '{}'),
   ('e0000001-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'rls-nobody@test.com', crypt('x', gen_salt('bf')), now(), now(), now(), '{}', '{}');
 
-insert into public.companies (id, name, trade, join_code) values
-  ('a0000000-0000-0000-0000-00000000000a', 'RLS Test Co A', 'Plumbing', 'RLSA-TEST'),
-  ('b0000000-0000-0000-0000-00000000000b', 'RLS Test Co B', 'Electrical', 'RLSB-TEST');
+insert into public.companies (id, name, trade) values
+  ('a0000000-0000-0000-0000-00000000000a', 'RLS Test Co A', 'Plumbing'),
+  ('b0000000-0000-0000-0000-00000000000b', 'RLS Test Co B', 'Electrical');
+
+-- Join codes live in their own owner-only table as of migration 076 (they used
+-- to be companies.join_code, which every tech could read).
+insert into public.company_join_codes (company_id, code) values
+  ('a0000000-0000-0000-0000-00000000000a', 'RLSA-TEST'),
+  ('b0000000-0000-0000-0000-00000000000b', 'RLSB-TEST');
 
 insert into public.profiles (id, company_id, role, name, email) values
   ('a0000001-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-00000000000a', 'owner', 'Owner A', 'rls-owner-a@test.com'),
@@ -79,6 +85,14 @@ begin
 
   select count(*) into v_count from public.job_types where company_id = 'b0000000-0000-0000-0000-00000000000b';
   if v_count <> 0 then raise exception 'FAIL: Owner A can read Company B''s service catalog'; end if;
+
+  -- Migration 076: an owner may read their own join code, never another
+  -- company's - the code grants access, so leaking it hands over the company.
+  select count(*) into v_count from public.company_join_codes where company_id = 'b0000000-0000-0000-0000-00000000000b';
+  if v_count <> 0 then raise exception 'FAIL: Owner A can read Company B''s join code'; end if;
+
+  select count(*) into v_count from public.company_join_codes;
+  if v_count <> 1 then raise exception 'FAIL: Owner A should see exactly their own join code, saw %', v_count; end if;
 
   -- A direct id lookup (not a company_id filter) must also come back
   -- empty - proves RLS filters the row, not just app-level query shape.
@@ -152,6 +166,40 @@ begin
   if v_count <> 0 then raise exception 'FAIL: a companyless user can see jobs (expected 0, got %)', v_count; end if;
   select count(*) into v_count from public.customers;
   if v_count <> 0 then raise exception 'FAIL: a companyless user can see customers (expected 0, got %)', v_count; end if;
+end $$;
+
+-- ---------------------------------------------------------------------
+-- A tech inside Company A. They legitimately see their own company's row,
+-- but must never see the join code - that code is what lets someone create
+-- an account inside this company, so a tech who can read it can hand out
+-- access to their employer's data (migration 076).
+-- ---------------------------------------------------------------------
+set local role authenticated;
+select set_config('request.jwt.claims', json_build_object('sub', 'a0000002-0000-0000-0000-000000000002', 'role', 'authenticated')::text, true);
+
+do $$
+declare
+  v_count integer;
+begin
+  select count(*) into v_count from public.companies;
+  if v_count <> 1 then raise exception 'FAIL: Tech A should see exactly their own company row, saw %', v_count; end if;
+
+  -- The regression this test exists for.
+  select count(*) into v_count from public.company_join_codes;
+  if v_count <> 0 then raise exception 'FAIL: Tech A can read a join code (expected 0, got %)', v_count; end if;
+
+  -- The view was the second leak path - it used to select c.join_code.
+  select count(*) into v_count from information_schema.columns
+   where table_schema = 'public' and table_name = 'companies_with_billing' and column_name = 'join_code';
+  if v_count <> 0 then raise exception 'FAIL: companies_with_billing exposes join_code again'; end if;
+
+  -- Only an owner may rotate the code.
+  begin
+    perform public.regenerate_join_code();
+    raise exception 'FAIL: Tech A was able to regenerate the company join code';
+  exception when others then
+    if sqlerrm like 'FAIL:%' then raise; end if;
+  end;
 end $$;
 
 -- ---------------------------------------------------------------------

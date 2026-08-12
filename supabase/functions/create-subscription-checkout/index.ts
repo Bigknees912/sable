@@ -23,22 +23,22 @@ function json(body: unknown, status = 200) {
 // dollar amount - set once in the Supabase dashboard after creating
 // recurring Prices in Stripe. See AUTH.md "Self-serve onboarding & billing".
 const PRICE_ENV_BY_PLAN: Record<string, string> = {
-  growth: "STRIPE_PRICE_GROWTH",
-  pro: "STRIPE_PRICE_PRO",
+  starter: "STRIPE_PRICE_STARTER", // "Solo" tier (migration 069) - now paid
+  growth: "STRIPE_PRICE_GROWTH",   // "Team"
+  pro: "STRIPE_PRICE_PRO",         // "Fleet"
 };
+
+// Advertised everywhere (pricing page, get-started, cancel copy): a 7-day
+// free trial, card required. This is where that promise is actually kept -
+// without it, Stripe bills the first month immediately.
+const TRIAL_DAYS = 7;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const { plan } = await req.json();
-    const priceEnvVar = PRICE_ENV_BY_PLAN[plan];
-    if (!priceEnvVar) return json({ error: "plan must be 'growth' or 'pro' (starter is free, no checkout needed)" }, 400);
-
-    const priceId = Deno.env.get(priceEnvVar);
-    if (!priceId) {
-      return json({ error: `Billing isn't fully set up yet: ${priceEnvVar} hasn't been configured. Your workspace was still created - see AUTH.md to finish Stripe setup.` }, 500);
-    }
+    if (!PRICE_ENV_BY_PLAN[plan]) return json({ error: "plan must be one of: starter (Solo), growth (Team), pro (Fleet)" }, 400);
 
     // RLS-scoped client acting as the caller (their JWT is forwarded), so
     // this can only ever read/act on the caller's own company - same
@@ -48,6 +48,14 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } } }
     );
+
+    // Stripe Price id: prefer plans.stripe_price_id (DB is the source of
+    // truth, set by migration 071), fall back to the STRIPE_PRICE_* env var.
+    const { data: planRow } = await supabase.from("plans").select("stripe_price_id").eq("key", plan).maybeSingle();
+    const priceId = planRow?.stripe_price_id || Deno.env.get(PRICE_ENV_BY_PLAN[plan]);
+    if (!priceId) {
+      return json({ error: "Billing isn't fully set up yet: no Stripe price configured for this plan. Your workspace was still created." }, 500);
+    }
 
     const {
       data: { user },
@@ -77,7 +85,13 @@ Deno.serve(async (req) => {
       // customer.subscription.updated/deleted, which don't carry the
       // session's own metadata) - see stripe-webhook/index.ts.
       metadata: { company_id: profile.company_id, plan },
-      subscription_data: { metadata: { company_id: profile.company_id, plan } },
+      subscription_data: {
+        metadata: { company_id: profile.company_id, plan },
+        // The 7-day free trial the whole product promises. Card is still
+        // collected now (Checkout requires it), but the first charge only
+        // lands on day 8.
+        trial_period_days: TRIAL_DAYS,
+      },
       success_url: `${origin}/?subscription=active`,
       cancel_url: `${origin}/?subscription=cancelled`,
     });

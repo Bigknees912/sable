@@ -41,12 +41,15 @@ export default function PlanSelectionScreen({ onBack, onContinue }) {
       {!error && plans === undefined && <LoadingState>Loading plans…</LoadingState>}
 
       {plans && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 18 }}>
+        <div role="radiogroup" aria-label="Plan" style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 18 }}>
           {plans.map((p) => {
             const active = p.key === selected
             return (
-              <div
+              <button
                 key={p.key}
+                type="button"
+                role="radio"
+                aria-checked={active}
                 className="tap"
                 onClick={() => setSelected(p.key)}
                 style={{
@@ -55,6 +58,8 @@ export default function PlanSelectionScreen({ onBack, onContinue }) {
                   padding: 16,
                   border: `1.5px solid ${active ? LIGHT.accent : LIGHT.border}`,
                   boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                  textAlign: 'left',
+                  width: '100%',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
@@ -62,7 +67,7 @@ export default function PlanSelectionScreen({ onBack, onContinue }) {
                     <div style={{ fontSize: 15, fontWeight: 700, color: LIGHT.ink }}>{p.label}</div>
                     <div style={{ fontSize: 13, fontWeight: 700, color: LIGHT.accent }}>{p.price}</div>
                   </div>
-                  <div style={{ width: 20, height: 20, borderRadius: 10, border: `1.5px solid ${active ? LIGHT.accent : LIGHT.border}`, background: active ? LIGHT.accent : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <div aria-hidden="true" style={{ width: 20, height: 20, borderRadius: 10, border: `1.5px solid ${active ? LIGHT.accent : LIGHT.border}`, background: active ? LIGHT.accent : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     {active && <Check size={12} color="#fff" strokeWidth={3} />}
                   </div>
                 </div>
@@ -70,11 +75,11 @@ export default function PlanSelectionScreen({ onBack, onContinue }) {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                   {p.features.map((f) => (
                     <div key={f} style={{ fontSize: 11.5, color: LIGHT.sub, display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <Check size={11} color={LIGHT.accent} /> {f}
+                      <Check size={11} color={LIGHT.accent} aria-hidden="true" /> {f}
                     </div>
                   ))}
                 </div>
-              </div>
+              </button>
             )
           })}
         </div>

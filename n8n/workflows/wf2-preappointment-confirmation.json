@@ -1,0 +1,524 @@
+{
+  "name": "WF2: Pre-appointment Confirmation",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 14 * * *"
+            }
+          ]
+        }
+      },
+      "id": "b3c8a23b-9533-4e2a-97c1-b5ba542c4af0",
+      "name": "Daily 8 AM MDT",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "companies",
+        "returnAll": true,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "active"
+            }
+          ]
+        }
+      },
+      "id": "ec7eac67-b964-4acb-b7eb-e17ec0f92dae",
+      "name": "Get Active Companies",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        224,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const now = new Date();\nconst gte = new Date(now.getTime() + 20 * 60 * 60 * 1000).toISOString();\nconst lte = new Date(now.getTime() + 28 * 60 * 60 * 1000).toISOString();\nreturn $input.all().map(item => ({\n  json: {\n    company_id: item.json.id,\n    company_name: item.json.company_name,\n    company_timezone: item.json.timezone || 'America/Denver',\n    gte_time: gte,\n    lte_time: lte,\n  }\n}));"
+      },
+      "id": "a7271026-dc59-4d47-9e51-726989975d92",
+      "name": "Compute Time Window",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "jobs",
+        "returnAll": true,
+        "filterType": "string",
+        "filterString": "=company_id=eq.{{ $json.company_id }}&status=in.(unassigned,assigned)&scheduled_at=gte.{{ $json.gte_time }}&scheduled_at=lte.{{ $json.lte_time }}"
+      },
+      "id": "de50c34d-2498-4dc6-b8b9-e501935dcdf9",
+      "name": "Get Jobs",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        896,
+        0
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "has_id",
+              "leftValue": "={{ $json.id }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "d55ef02c-53a5-4ccb-acc0-c059f659be94",
+      "name": "Real Job?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1120,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "8d5cb3a0-2430-4da8-804b-6adeae32703e",
+      "name": "Batch Companies",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        448,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "customers",
+        "limit": 1,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.customer_id }}"
+            },
+            {
+              "keyName": "company_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.company_id }}"
+            }
+          ]
+        }
+      },
+      "id": "2d7f96eb-4fb3-4ef6-80c7-642d64c5f570",
+      "name": "Get Contact",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1568,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "job_id",
+              "value": "={{ $('Get Jobs').item.json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "company_id",
+              "value": "={{ $('Get Jobs').item.json.company_id }}",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "customer_id",
+              "value": "={{ $('Get Jobs').item.json.customer_id }}",
+              "type": "string"
+            },
+            {
+              "id": "4",
+              "name": "service_type",
+              "value": "={{ $('Get Jobs').item.json.service_type }}",
+              "type": "string"
+            },
+            {
+              "id": "5",
+              "name": "scheduled_at",
+              "value": "={{ $('Get Jobs').item.json.scheduled_at }}",
+              "type": "string"
+            },
+            {
+              "id": "6",
+              "name": "customer_name",
+              "value": "={{ $json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "7",
+              "name": "customer_phone",
+              "value": "={{ $json.phone || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "8",
+              "name": "company_name",
+              "value": "={{ $('Compute Time Window').item.json.company_name }}",
+              "type": "string"
+            },
+            {
+              "id": "9",
+              "name": "timezone",
+              "value": "={{ $('Compute Time Window').item.json.company_timezone }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "369a6fb9-8c5f-4f31-8de1-c6ff91652f4c",
+      "name": "Consolidate",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1792,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "phone",
+              "leftValue": "={{ $json.customer_phone }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "9455f65a-c872-4f71-9eba-9f231a548b50",
+      "name": "Has Phone?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2016,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(item => {\n  const tz = item.json.timezone || 'America/Denver';\n  const date = new Date(item.json.scheduled_at);\n  const formatted = date.toLocaleTimeString('en-US', {\n    timeZone: tz,\n    hour: 'numeric',\n    minute: '2-digit',\n    hour12: true,\n  });\n  return { json: { ...item.json, formatted_time: formatted } };\n});"
+      },
+      "id": "733152bc-f7bb-4fbf-8404-7c82f2b2e491",
+      "name": "Format Time",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "from": "<__PLACEHOLDER_VALUE__Twilio phone number (E.164, e.g. +15005550006)__>",
+        "to": "={{ $json.customer_phone }}",
+        "message": "=Hi {{ $json.customer_name }}, confirming your {{ $json.service_type }} appointment tomorrow at {{ $json.formatted_time }}. Reply YES to confirm or RESCHEDULE for a new time. \u2013 {{ $json.company_name }}",
+        "options": {}
+      },
+      "id": "4653d5b2-eca5-4250-8c05-205827f8033e",
+      "name": "Send Confirmation SMS",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        2464,
+        0
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "tableId": "confirmation_requests",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "job_id",
+              "fieldValue": "={{ $('Consolidate').item.json.job_id }}"
+            },
+            {
+              "fieldId": "company_id",
+              "fieldValue": "={{ $('Consolidate').item.json.company_id }}"
+            },
+            {
+              "fieldId": "customer_id",
+              "fieldValue": "={{ $('Consolidate').item.json.customer_id }}"
+            },
+            {
+              "fieldId": "customer_phone",
+              "fieldValue": "={{ $('Consolidate').item.json.customer_phone }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "pending"
+            },
+            {
+              "fieldId": "sent_at",
+              "fieldValue": "={{ $now.toISO() }}"
+            }
+          ]
+        }
+      },
+      "id": "4c5e21ff-6431-4930-80d3-4fb5cfe356b5",
+      "name": "Create Confirmation Request",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2688,
+        32
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "a9104c6b-7ab9-4caf-b5f1-16b4f01a970b",
+      "name": "Batch Jobs",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1344,
+        144
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Daily 8 AM MDT": {
+      "main": [
+        [
+          {
+            "node": "Get Active Companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Active Companies": {
+      "main": [
+        [
+          {
+            "node": "Batch Companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute Time Window": {
+      "main": [
+        [
+          {
+            "node": "Get Jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Jobs": {
+      "main": [
+        [
+          {
+            "node": "Real Job?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Real Job?": {
+      "main": [
+        [
+          {
+            "node": "Batch Jobs",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Batch Companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Batch Companies": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Compute Time Window",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Contact": {
+      "main": [
+        [
+          {
+            "node": "Consolidate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consolidate": {
+      "main": [
+        [
+          {
+            "node": "Has Phone?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Phone?": {
+      "main": [
+        [
+          {
+            "node": "Format Time",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Batch Jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Time": {
+      "main": [
+        [
+          {
+            "node": "Send Confirmation SMS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Confirmation SMS": {
+      "main": [
+        [
+          {
+            "node": "Create Confirmation Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Confirmation Request": {
+      "main": [
+        [
+          {
+            "node": "Batch Jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Batch Jobs": {
+      "main": [
+        [
+          {
+            "node": "Batch Companies",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "4e52387f-acbd-4fff-b7cc-e9cb1028c38f",
+  "meta": {
+    "instanceId": "1f898378341ccb341e91602af9fe7508a6860290fcee6f09244305e2b8d071a0"
+  },
+  "nodeGroups": [],
+  "id": "IuCTVo1Jcnrxa5F2",
+  "tags": []
+}

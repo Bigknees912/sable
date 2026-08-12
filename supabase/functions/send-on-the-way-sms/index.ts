@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
 
     const { data: job, error: jobError } = await supabase
       .from("jobs")
-      .select("id, status, address, company_id, customers(id, name, phone, sms_consent), companies(name), assigned_tech:profiles!jobs_assigned_tech_id_fkey(name)")
+      .select("id, status, address, company_id, portal_token, customers(id, name, phone, sms_consent), companies(name), assigned_tech:profiles!jobs_assigned_tech_id_fkey(name)")
       .eq("id", job_id)
       .maybeSingle();
     if (jobError) throw jobError;
@@ -61,7 +61,13 @@ Deno.serve(async (req) => {
     const firstName = customer.name?.trim().split(/\s+/)[0] || "there";
     const techFirstName = tech?.name?.trim().split(/\s+/)[0] || "Your technician";
     const mapsLink = `https://maps.google.com/?q=${encodeURIComponent(job.address)}`;
-    const message = `Hi ${firstName}, ${techFirstName} from ${company.name} is on the way to ${job.address}. ${mapsLink} Reply STOP to opt out.`;
+    // No-login customer portal link (task 2). PORTAL_BASE_URL is the public
+    // marketing/app domain that serves portal.html (e.g. https://runsable.com).
+    // Omitted from the text if unset rather than sending a broken link.
+    const portalBase = Deno.env.get("PORTAL_BASE_URL");
+    const portalToken = (job as unknown as { portal_token?: string }).portal_token;
+    const trackLink = portalBase && portalToken ? ` Track your visit: ${portalBase.replace(/\/$/, "")}/portal.html?t=${portalToken}` : "";
+    const message = `Hi ${firstName}, ${techFirstName} from ${company.name} is on the way to ${job.address}. ${mapsLink}${trackLink} Reply STOP to opt out.`;
 
     const accountSid = Deno.env.get("TWILIO_ACCOUNT_SID")!;
     const authToken = Deno.env.get("TWILIO_AUTH_TOKEN")!;

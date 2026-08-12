@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { X, UserCheck, DollarSign, AlertTriangle, Clock, Star, CheckCheck } from 'lucide-react'
 import { listNotifications, markNotificationRead, markAllNotificationsRead } from '../lib/notifications'
+import { useEscapeToClose } from './useEscapeToClose'
 import { LIGHT } from '../theme'
 import { LoadingState, ErrorState, ErrorBanner, EmptyState } from './ui'
 import { useAsyncData } from './useAsyncData'
@@ -31,6 +32,7 @@ function timeAgo(iso) {
 // feed. `onUnreadCountChange` keeps AppShell's badge in sync without it
 // needing its own duplicate query while this is open.
 export default function NotificationCenterModal({ companyId, onClose, onUnreadCountChange }) {
+  useEscapeToClose(onClose)
   const [notifications, setNotifications] = useState([])
   const [markingAll, setMarkingAll] = useState(false)
 
@@ -79,7 +81,7 @@ export default function NotificationCenterModal({ companyId, onClose, onUnreadCo
       <div style={{ background: LIGHT.card, borderRadius: '20px 20px 0 0', padding: 22, width: '100%', maxWidth: 480, maxHeight: '85vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
           <div style={{ fontSize: 16, fontWeight: 700, color: LIGHT.ink }}>Notifications</div>
-          <button className="tap" onClick={onClose}><X size={20} color={LIGHT.sub} /></button>
+          <button type="button" className="tap" onClick={onClose} aria-label="Close"><X size={20} color={LIGHT.sub} aria-hidden="true" /></button>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <div style={{ fontSize: 12, color: LIGHT.sub }}>{unreadCount > 0 ? `${unreadCount} unread` : 'All caught up'}</div>
@@ -100,22 +102,23 @@ export default function NotificationCenterModal({ companyId, onClose, onUnreadCo
                 const meta = TYPE_META[n.type] || TYPE_META.job_assigned
                 const Icon = meta.icon
                 return (
-                  <div
+                  <button
                     key={n.id}
+                    type="button"
                     className="tap"
                     onClick={() => handleOpenOne(n)}
-                    style={{ display: 'flex', gap: 10, alignItems: 'flex-start', background: n.read_at ? 'transparent' : LIGHT.bg, borderRadius: 12, padding: 10, textAlign: 'left' }}
+                    style={{ width: '100%', display: 'flex', gap: 10, alignItems: 'flex-start', background: n.read_at ? 'transparent' : LIGHT.bg, borderRadius: 12, padding: 10, textAlign: 'left' }}
                   >
-                    <div style={{ width: 32, height: 32, borderRadius: 9, background: meta.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <div aria-hidden="true" style={{ width: 32, height: 32, borderRadius: 9, background: meta.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <Icon size={15} color={meta.fg} />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 13, fontWeight: n.read_at ? 500 : 700, color: LIGHT.ink, lineHeight: 1.3 }}>{n.title}</div>
                       {n.body && <div style={{ fontSize: 11.5, color: LIGHT.sub, marginTop: 2 }}>{n.body}</div>}
-                      <div style={{ fontSize: 10.5, color: LIGHT.sub, marginTop: 3 }}>{timeAgo(n.created_at)}</div>
+                      <div style={{ fontSize: 10.5, color: LIGHT.sub, marginTop: 3 }}>{timeAgo(n.created_at)} {!n.read_at && '· unread'}</div>
                     </div>
-                    {!n.read_at && <div style={{ width: 8, height: 8, borderRadius: 4, background: LIGHT.accent, flexShrink: 0, marginTop: 5 }} />}
-                  </div>
+                    {!n.read_at && <div aria-hidden="true" style={{ width: 8, height: 8, borderRadius: 4, background: LIGHT.accent, flexShrink: 0, marginTop: 5 }} />}
+                  </button>
                 )
               })}
               {notifications.length === 0 && <EmptyState>No notifications yet.</EmptyState>}

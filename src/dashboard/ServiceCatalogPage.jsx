@@ -195,22 +195,22 @@ function JobTypeCard({ jobType, isNew, company, onSaved, onCancel, allParts, req
     <div style={{ background: LIGHT.card, borderRadius: 16, padding: 16, boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 10, marginBottom: 10 }}>
         <div>
-          <FieldLabel>Service name</FieldLabel>
-          <TextInput value={label} onChange={setLabel} placeholder="Drain Cleaning" />
+          <FieldLabel htmlFor="field-service-name-1">Service name</FieldLabel>
+          <TextInput id="field-service-name-1" value={label} onChange={setLabel} placeholder="Drain Cleaning" />
         </div>
         <div>
-          <FieldLabel>Est. hours</FieldLabel>
-          <TextInput value={baseHours} onChange={setBaseHours} placeholder="1.5" />
+          <FieldLabel htmlFor="field-est-hours-1">Est. hours</FieldLabel>
+          <TextInput id="field-est-hours-1" value={baseHours} onChange={setBaseHours} placeholder="1.5" />
         </div>
         <div>
-          <FieldLabel>Hourly rate ($, blank = default)</FieldLabel>
-          <TextInput value={hourlyRate} onChange={setHourlyRate} placeholder={String(company?.hourly_rate ?? '')} />
+          <FieldLabel htmlFor="field-hourly-rate-blank-default-1">Hourly rate ($, blank = default)</FieldLabel>
+          <TextInput id="field-hourly-rate-blank-default-1" value={hourlyRate} onChange={setHourlyRate} placeholder={String(company?.hourly_rate ?? '')} />
         </div>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
         <div>
-          <FieldLabel>Typical parts cost ($)</FieldLabel>
-          <TextInput value={partsCost} onChange={setPartsCost} placeholder="80" />
+          <FieldLabel htmlFor="field-typical-parts-cost-1">Typical parts cost ($)</FieldLabel>
+          <TextInput id="field-typical-parts-cost-1" value={partsCost} onChange={setPartsCost} placeholder="80" />
         </div>
       </div>
 

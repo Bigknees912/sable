@@ -1,4 +1,4 @@
-# Mayfield AI Receptionist — Real Phone Deployment
+# Sable AI Receptionist — Real Phone Deployment
 
 This is the actual server that answers real phone calls once wired up. It
 ports the pricing and scheduling logic from the chat demo into three tools
@@ -70,7 +70,7 @@ laptop right now and Vapi can't reach `localhost`. Easiest free options:
 
 1. Push this folder to a GitHub repo (or drag-and-drop deploy where supported).
 2. Set the start command to `npm start`.
-3. Once deployed, you'll get a URL like `https://mayfield-receptionist.onrender.com`.
+3. Once deployed, you'll get a URL like `https://sable-receptionist.onrender.com`.
 
 To test locally first instead, install the Vapi CLI and tunnel your machine:
 
@@ -144,6 +144,49 @@ running your actual pricing and scheduling logic.
 - **SMS confirmation**: Vapi has a built-in `sms` tool that can text the
   customer a booking confirmation right after the call, using the Twilio
   account you already connected. Worth adding once the core flow works.
+- **Outage safety net (do this before going live with a real client)**:
+  the whole pitch is "you never miss a call" - two layers protect that:
+  1. *Our own server hiccups*: `lib/outageAlert.js` counts tool-call
+     failures per company, and once 3 happen inside 5 minutes, POSTs to
+     `OUTAGE_ALERT_URL` (the deployed `receptionist-outage-alert` edge
+     function) with the shared secret `OUTAGE_ALERT_WEBHOOK_SECRET` set on
+     both sides. That function texts the company's owner directly (looked
+     up from `profiles` where `role = 'owner'`) and logs the incident to
+     `receptionist_outage_alerts`. Deploy the function, set both env vars
+     on the server, and set `OUTAGE_ALERT_WEBHOOK_SECRET`/`TWILIO_*` on the
+     function itself, or this only logs to the console (still visible in
+     Sentry, just not proactive). Individual failed tool calls also no
+     longer leak a raw `Error: ...` string to the model - the caller hears
+     "someone will call you back," and a `customer_interactions` row gets
+     created automatically so the office actually follows up.
+  2. *Vapi or the whole webhook is unreachable, not just one tool call*:
+     that's outside anything our own code can catch, since Vapi never
+     reaches us at all. In the Vapi dashboard, on the phone number itself
+     (not the assistant), set a **fallback destination** - a real human
+     line (the office's cell, an answering service) that Vapi forwards to
+     if the assistant can't be reached. This is the actual backstop for a
+     total platform outage; there is no code path for it, it's a dashboard
+     setting, and it's the single highest-value 5 minutes you can spend
+     before handing this to a paying client.
+  3. *Voicemail fallback that still captures the lead* (the version a client
+     actually wants): instead of forwarding a total-outage call to a dead
+     line, point the Vapi phone number's fallback destination at a Twilio
+     number whose TwiML plays a short greeting and records a message —
+     "Thanks for calling {company}, we're having a brief issue, please
+     leave your name and number and we'll call you back within the hour."
+     Configure that `<Record>`'s `transcribeCallback` /
+     `recordingStatusCallback` to POST to the deployed
+     `fallback-voicemail` Supabase edge function with the
+     `x-webhook-secret: FALLBACK_VOICEMAIL_WEBHOOK_SECRET` header (and the
+     company id as `companyId`). That function lands the caller as a **New
+     Lead flagged `capture_method='fallback_voicemail'`** — shown with a
+     "Fallback voicemail" badge on the Clients board so it's never confused
+     with a normal AI call — records a `voicemail`-outcome call with the
+     transcription, and fires the same monitoring alert as layer 1 so you
+     hear about the outage before the client does. Set
+     `FALLBACK_VOICEMAIL_WEBHOOK_SECRET` (and `OUTAGE_ALERT_URL` /
+     `OUTAGE_ALERT_WEBHOOK_SECRET` for the alert) as secrets on that
+     function; unconfigured, it still logs loudly to the console/Sentry.
 - **Per-client setup**: `lib/pricing.js` and `lib/assistantConfig.js` both
   read this company's own `companies`/`job_types` rows - to resell this to
   a second company of any trade, copy the project, point

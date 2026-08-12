@@ -37,6 +37,11 @@ async function syncSubscriptionFromStripe(subscription: Stripe.Subscription) {
     stripe_customer_id: typeof subscription.customer === "string" ? subscription.customer : subscription.customer?.id,
     stripe_subscription_id: subscription.id,
     current_period_end: periodEndOf(subscription as unknown as { current_period_end?: number }),
+    // Keeps Settings' "cancels on <date>" notice accurate even if the
+    // cancellation happened somewhere other than our own
+    // cancel-subscription function (Stripe's dashboard, a support agent,
+    // the customer portal) - Stripe is the source of truth, not our button.
+    cancel_at_period_end: Boolean(subscription.cancel_at_period_end),
   };
   if (plan) patch.plan = plan;
 

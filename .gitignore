@@ -16,3 +16,6 @@ bookings.json
 # source template, and different for every client deployment.
 receptionist-server/assistant.generated.json
 marketing-site.generated.html
+
+# Vite build output
+dist/

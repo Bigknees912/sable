@@ -3,9 +3,30 @@ import { supabase } from './supabaseClient'
 // Real Supabase Auth wrappers. These replace app-demo.jsx's fake
 // `loginDemo(role)` / local-state signup handlers.
 
+// Turns Supabase's terse, sometimes security-deliberately-vague auth errors
+// into copy a tradesperson can act on. Note: Supabase intentionally returns
+// the SAME "Invalid login credentials" for both a wrong password and an
+// email with no account, to avoid leaking which emails are registered
+// (account enumeration). We keep that single message rather than splitting
+// it into "wrong password" vs "no account" - the vaguer message is the
+// secure behavior, so the copy covers both cases in one friendly line.
+export function mapAuthError(error) {
+  const raw = (error && (error.message || error.error_description || String(error))) || 'Something went wrong.'
+  const m = raw.toLowerCase()
+  if (m.includes('invalid login credentials')) return "That email and password don't match. Double-check both and try again."
+  if (m.includes('email not confirmed')) return 'Please confirm your email first — check your inbox for the verification link.'
+  if (m.includes('already registered') || m.includes('already been registered') || m.includes('user already')) return 'An account with this email already exists. Try signing in instead.'
+  if (m.includes('password should be') || m.includes('password is too short') || m.includes('at least 6')) return 'Your password is too short. Use at least 8 characters.'
+  if (m.includes('unable to validate email') || m.includes('invalid email') || m.includes('valid email')) return 'That doesn’t look like a valid email address.'
+  if (m.includes('rate limit') || m.includes('too many') || m.includes('for security purposes')) return 'Too many attempts. Please wait a minute and try again.'
+  if (m.includes('provider is not enabled') || m.includes('oauth')) return 'Google sign-in isn’t finished being set up yet. Try email and password for now.'
+  if (m.includes('network') || m.includes('fetch') || m.includes('failed to fetch')) return 'Network problem — check your connection and try again.'
+  return raw // already human-readable (e.g. our own RPC messages), pass through
+}
+
 export async function signUpWithPassword(email, password) {
   const { data, error } = await supabase.auth.signUp({ email, password })
-  if (error) throw error
+  if (error) throw new Error(mapAuthError(error))
   // data.session is null when the project requires email confirmation -
   // callers must handle that case (show a "check your email" screen).
   return data
@@ -13,7 +34,7 @@ export async function signUpWithPassword(email, password) {
 
 export async function signInWithPassword(email, password) {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-  if (error) throw error
+  if (error) throw new Error(mapAuthError(error))
   return data
 }
 
@@ -22,7 +43,7 @@ export async function signInWithGoogle() {
     provider: 'google',
     options: { redirectTo: window.location.origin },
   })
-  if (error) throw error
+  if (error) throw new Error(mapAuthError(error))
 }
 
 export async function signOut() {
@@ -40,7 +61,7 @@ export async function resetPasswordForEmail(email) {
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: window.location.origin,
   })
-  if (error) throw error
+  if (error) throw new Error(mapAuthError(error))
 }
 
 // Sets a new password for the currently-authenticated session - only
@@ -48,7 +69,7 @@ export async function resetPasswordForEmail(email) {
 // a session exists without the user having "really" signed in.
 export async function updatePassword(newPassword) {
   const { error } = await supabase.auth.updateUser({ password: newPassword })
-  if (error) throw error
+  if (error) throw new Error(mapAuthError(error))
 }
 
 // Returns the caller's profile row (joined with their company), or null if
@@ -94,6 +115,11 @@ export async function joinCompany({ joinCode, name, role }) {
     p_name: name,
     p_role: role || 'tech',
   })
-  if (error) throw error
+  if (error) {
+    const m = (error.message || '').toLowerCase()
+    if (m.includes('invalid') && m.includes('code')) throw new Error("That join code doesn't match any company. Double-check it with your employer.")
+    if (m.includes('too many') || m.includes('rate')) throw new Error('Too many attempts with that code. Please wait a bit and try again.')
+    throw new Error(mapAuthError(error))
+  }
   return data
 }

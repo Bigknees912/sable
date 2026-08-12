@@ -1,325 +1,131 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' fonts.googleapis.com; font-src fonts.gstatic.com; img-src 'self' data: https://images.unsplash.com; script-src 'self' 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'">
-<title>About Sable</title>
-<meta name="description" content="Why Sable exists, and what it's like to run a trade business on it.">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' fonts.googleapis.com; font-src fonts.gstatic.com; img-src 'self' data:; script-src 'self' 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'">
+<title>About — Sable</title>
+<meta name="description" content="Sable was built for the trades — an AI receptionist that answers every call and quotes the job accurately on the spot.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap');
-
-  :root {
-    --bg: #F5F4ED;
-    --card: #FFFFFF;
-    --ink: #1F1E1D;
-    --sub: #83807A;
-    --border: #E5E1D8;
-    --accent: #DA7756;
-    --accent-soft: #F3E3DB;
-    --gold: #E0A94E;
-    --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #262624;
-      --card: #302F2C;
-      --ink: #F0EEE8;
-      --sub: #A39E92;
-      --border: #3D3B37;
-      --accent: #E08D6B;
-      --accent-soft: #3A2E27;
-      --gold: #C99544;
-    }
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  html { scroll-behavior: smooth; }
-  body { font-family: 'Inter', sans-serif; color: var(--ink); background: var(--bg); overflow-x: hidden; }
-  h1, h2, h3 { font-family: 'Oswald', sans-serif; font-weight: 600; letter-spacing: 0.2px; }
-  .mono { font-family: 'IBM Plex Mono', monospace; }
-  a { text-decoration: none; color: inherit; }
-  .wrap { max-width: 900px; margin: 0 auto; padding: 0 24px; }
-  section { padding: 64px 0; }
-
-  .intro-el { opacity: 0; transform: translateY(10px); animation: introIn 0.5s ease forwards; }
-  .intro-el.d1 { animation-delay: 0.05s; }
-  .intro-el.d2 { animation-delay: 0.14s; }
-  @keyframes introIn { to { opacity: 1; transform: translateY(0); } }
-
-  .reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.7s var(--ease-smooth), transform 0.7s var(--ease-smooth); }
-  .reveal.in { opacity: 1; transform: translateY(0); }
-
-  @media (prefers-reduced-motion: reduce) {
-    html { scroll-behavior: auto; }
-    .intro-el, .reveal, .blob, .scroll-img { animation: none !important; transition: none !important; opacity: 1 !important; transform: none !important; }
-    .scroll-img.is-link:hover img { transform: none !important; }
-  }
-
-  /* Scroll/hover image reveal - see the IntersectionObserver script near
-     the bottom of the page. */
-  .scroll-img { display: block; opacity: 0; transform: translateY(28px); transition: opacity 0.36s var(--ease-smooth), transform 0.36s var(--ease-smooth); border-radius: 20px; overflow: hidden; }
-  .scroll-img.in { opacity: 1; transform: translateY(0); }
-  .scroll-img img { display: block; width: 100%; height: auto; transition: transform 0.3s var(--ease-smooth); }
-  .scroll-img.is-link { cursor: pointer; }
-  .scroll-img.is-link:hover img { transform: scale(1.04); }
-  .scroll-img-caption { margin-top: 12px; font-size: 13px; color: var(--sub); }
-
-  nav { position: fixed; top: 0; left: 0; right: 0; z-index: 50; padding: 18px 0; background: var(--bg); border-bottom: 1px solid var(--border); }
-  nav .wrap { max-width: 1080px; display: flex; align-items: center; justify-content: space-between; }
-  .logo { font-family: 'Oswald', sans-serif; color: var(--ink); font-size: 19px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
-  .logo .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
-  .nav-links { display: flex; align-items: center; gap: 26px; }
-  .nav-links a { color: var(--sub); font-size: 13.5px; font-weight: 500; transition: color 0.3s var(--ease-smooth); }
-  .nav-links a:hover { color: var(--ink); }
-  .nav-cta { background: var(--ink); color: var(--bg); font-size: 13px; font-weight: 600; padding: 10px 18px; border-radius: 8px; transition: opacity 0.3s var(--ease-smooth), transform 0.3s var(--ease-smooth); }
-  .nav-cta:hover { opacity: 0.88; transform: translateY(-1px); }
-  @media (max-width: 720px) { .nav-links a:not(.nav-cta) { display: none; } }
-
-  .page-head { position: relative; padding: 150px 0 20px; overflow: hidden; }
-  .page-head-bg { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
-  .blob { position: absolute; border-radius: 50%; filter: blur(70px); will-change: transform; }
-  .blob.b1 { width: 380px; height: 380px; top: -160px; left: -80px; background: radial-gradient(circle, var(--accent) 0%, transparent 72%); opacity: 0.35; animation: floatBlob1 24s var(--ease-smooth) infinite; }
-  .blob.b2 { width: 300px; height: 300px; top: -60px; right: -100px; background: radial-gradient(circle, var(--gold) 0%, transparent 72%); opacity: 0.28; animation: floatBlob2 28s var(--ease-smooth) infinite; }
-  @keyframes floatBlob1 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(40px, 30px) scale(1.08); } }
-  @keyframes floatBlob2 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-30px, 35px) scale(0.94); } }
-  /* .page-head doubles as .wrap (no separate full-width outer element on
-     this page), so the blob field is just its first child, painted below
-     every later sibling by DOM order - no z-index juggling needed. */
-  .eyebrow { font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 1.5px; color: var(--accent); margin-bottom: 16px; text-transform: uppercase; }
-  .page-head h1 { font-size: 40px; line-height: 1.15; color: var(--ink); max-width: 640px; }
-
-  .founder { display: grid; grid-template-columns: 96px 1fr; gap: 24px; align-items: start; }
-  @media (max-width: 560px) { .founder { grid-template-columns: 1fr; } }
-  .founder-avatar { width: 96px; height: 96px; border-radius: 16px; background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center; font-family: 'Oswald', sans-serif; font-size: 30px; font-weight: 600; }
-  .founder h2 { font-size: 24px; margin-bottom: 4px; }
-  .founder .role { font-size: 13px; color: var(--sub); margin-bottom: 18px; }
-  .founder p { font-size: 15.5px; line-height: 1.7; color: var(--ink); margin-bottom: 14px; max-width: 620px; }
-  .founder p:last-child { margin-bottom: 0; }
-
-  .section-eyebrow { font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 1.5px; color: var(--accent); text-transform: uppercase; margin-bottom: 10px; }
-  .section-head h2 { font-size: 26px; color: var(--ink); }
-  .placeholder-note { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; color: var(--sub); background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 5px 12px; margin-top: 10px; }
-
-  .testimonial-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 30px; }
-  @media (max-width: 760px) { .testimonial-grid { grid-template-columns: 1fr; } }
-  .testimonial { background: var(--card); border-radius: 14px; padding: 22px; border: 1px solid var(--border); position: relative; }
-  .testimonial .example-tag { position: absolute; top: 14px; right: 14px; font-size: 9.5px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; color: var(--sub); background: var(--bg); border: 1px solid var(--border); border-radius: 20px; padding: 3px 8px; }
-  .testimonial .quote { font-size: 14px; color: var(--ink); line-height: 1.6; margin-bottom: 16px; padding-right: 40px; }
-  .testimonial .who { display: flex; align-items: center; gap: 10px; }
-  .testimonial .avatar { width: 32px; height: 32px; border-radius: 8px; background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
-  .testimonial .who-text { font-size: 12px; }
-  .testimonial .who-name { font-weight: 700; color: var(--ink); }
-  .testimonial .who-detail { color: var(--sub); }
-
-  .values { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-  @media (max-width: 760px) { .values { grid-template-columns: 1fr; } }
-  .value h3 { font-size: 15px; margin-bottom: 6px; }
-  .value p { font-size: 13.5px; color: var(--sub); line-height: 1.55; }
-
-  .cta-band { background: var(--ink); color: var(--bg); border-radius: 20px; padding: 48px 40px; text-align: center; }
-  .cta-band h2 { color: var(--bg); font-size: 24px; margin-bottom: 12px; }
-  .cta-band p { color: rgba(245,244,237,0.72); font-size: 14.5px; margin-bottom: 22px; }
-  .btn-primary { background: var(--accent); color: #fff; font-size: 14px; font-weight: 600; padding: 13px 22px; border-radius: 10px; display: inline-block; transition: opacity 0.3s var(--ease-smooth), transform 0.3s var(--ease-smooth); }
-  .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
-
-  footer { border-top: 1px solid var(--border); padding: 36px 0; }
-  footer .wrap { max-width: 1080px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 14px; font-size: 12.5px; color: var(--sub); }
-  footer a { color: var(--sub); }
-  footer a:hover { color: var(--ink); }
+  :root{--paper:#F4F0E9;--paper2:#FBF9F5;--ink:#1F1E1D;--ink2:#5A554D;--muted:#8A8580;--copper:#B87333;--copper-dk:#9a5f28;--copper-lt:#D18E4E;--line:#E7E0D4;--line2:#E1DACE;--navy:#0A1128;}
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;overflow-x:hidden;min-height:100vh;}
+  html{scroll-behavior:smooth;}
+  a{color:var(--copper);text-decoration:none;}
+  a:hover{color:var(--copper-dk);}
+  h1,h2,h3{font-family:'Oswald',sans-serif;}
+  a:focus-visible,button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--copper);outline-offset:3px;border-radius:6px;}
+  .wrap{max-width:1240px;margin:0 auto;}
+  .nav-link{color:#4A463F;font-size:15px;font-weight:500;transition:color .2s ease;}
+  .nav-link:hover{color:var(--ink);}
+  .nav-cta{background:var(--ink);color:#fff;font-size:14px;font-weight:600;padding:12px 22px;border-radius:999px;transition:transform .2s ease,background .2s ease,box-shadow .2s ease;}
+  .nav-cta:hover{background:#000;color:#fff;transform:translateY(-2px);box-shadow:0 10px 22px -10px rgba(31,30,29,.6);}
+  .btn-light{display:inline-flex;align-items:center;justify-content:center;gap:10px;background:#fff;color:#1F1E1D;font-size:16px;font-weight:600;padding:16px 30px;border-radius:999px;transition:transform .2s ease,box-shadow .2s ease;}
+  .btn-light:hover{color:#1F1E1D;transform:translateY(-2px);box-shadow:0 14px 30px -12px rgba(0,0,0,.35);}
+  .btn-outline-w{display:inline-flex;align-items:center;justify-content:center;gap:10px;background:transparent;border:1.5px solid rgba(255,255,255,.6);color:#fff;font-size:16px;font-weight:600;padding:16px 28px;border-radius:999px;transition:transform .2s ease,background .2s ease,border-color .2s ease;}
+  .btn-outline-w:hover{color:#fff;border-color:#fff;background:rgba(255,255,255,.1);transform:translateY(-2px);}
+  @media (max-width:680px){header.nav{padding:18px 20px !important;}nav.nav-links{gap:16px !important;row-gap:10px !important;flex-wrap:wrap;justify-content:flex-end;}}
+  @media (prefers-reduced-motion: reduce){html{scroll-behavior:auto;}[data-reveal],[data-stagger]>*{opacity:1 !important;transform:none !important;}}
 </style>
 </head>
 <body>
 
-<nav>
-  <div class="wrap">
-    <div class="logo"><span class="dot"></span> Sable</div>
-    <div class="nav-links">
-      <a href="home.html">Home</a>
-      <a href="home.html#how">How It Works</a>
-      <a href="pricing.html">Pricing</a>
-      <a href="index.html">Log In</a>
-      <a href="pricing.html" class="nav-cta">Start Free Trial</a>
+<header class="nav wrap" style="padding:26px 32px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;">
+  <a href="home.html" style="display:flex;align-items:center;gap:11px;">
+    <div style="width:34px;height:34px;background:#B87333;border-radius:9px;display:flex;align-items:center;justify-content:center;"><span style="font-family:'Oswald';font-weight:700;font-size:20px;color:#fff;line-height:1;">S</span></div>
+    <span style="font-family:'Oswald';font-weight:600;font-size:24px;color:#1F1E1D;">Sable</span>
+  </a>
+  <nav class="nav-links" style="display:flex;align-items:center;gap:34px;flex-wrap:wrap;justify-content:flex-end;">
+    <a href="home.html" class="nav-link">Home</a>
+    <a href="features.html" class="nav-link">Features</a>
+    <a href="pricing.html" class="nav-link">Pricing</a>
+    <a href="login.html" class="nav-link">Log In</a>
+    <a href="get-started.html" class="nav-cta">Get Started</a>
+  </nav>
+</header>
+
+<section style="max-width:900px;margin:0 auto;padding:52px 32px 20px;text-align:center;">
+  <div data-reveal>
+    <div style="display:inline-flex;align-items:center;gap:9px;background:rgba(184,115,51,.1);border:1px solid rgba(184,115,51,.24);padding:7px 15px;border-radius:999px;margin-bottom:24px;">
+      <span style="width:7px;height:7px;border-radius:50%;background:#B87333;"></span>
+      <span style="font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#9a5f28;">About Sable</span>
     </div>
+    <h1 style="font-weight:700;font-size:clamp(2.6rem,6vw,4.6rem);line-height:.98;letter-spacing:-.02em;margin:0 auto 20px;text-transform:uppercase;max-width:18ch;text-wrap:balance;">We know what a missed call costs</h1>
+    <p style="font-size:19px;line-height:1.55;color:#5A554D;max-width:56ch;margin:0 auto;text-wrap:pretty;">Sable was built for the trades — the plumbers, electricians, and HVAC pros who lose real money every time the phone rings and no one can pick up.</p>
   </div>
-</nav>
+</section>
 
-<div class="page-head wrap">
-  <div class="page-head-bg"><div class="blob b1"></div><div class="blob b2"></div></div>
-  <div class="eyebrow intro-el d1">About</div>
-  <h1 class="intro-el d2">Software built by someone who's actually missed the call.</h1>
-</div>
+<section style="max-width:820px;margin:0 auto;padding:48px 32px;">
+  <div data-reveal style="display:flex;flex-direction:column;gap:22px;font-size:18px;line-height:1.7;color:#3F3B34;">
+    <p style="margin:0;text-wrap:pretty;">We started Sable after watching a plumber friend lose a $1,400 emergency job to voicemail at 11pm — the caller simply dialed the next name on the list. It happens to trades every single day.</p>
+    <p style="margin:0;text-wrap:pretty;">So we built the one thing that actually moves the needle: an assistant that answers every call and <strong>quotes the job accurately on the spot</strong>. Quoting is our craft. Everything else — dispatch, the live map, the customer records, the review bot — exists to turn that answered call into booked, paid, five-star work.</p>
+    <p style="margin:0;text-wrap:pretty;">No call center. No script that frustrates your customers. Just a front office that never sleeps, priced per truck instead of per headache.</p>
+  </div>
+</section>
 
-<!--
-  FOUNDER STORY — placeholder draft, not verified fact.
-  Written in first person as a strong starting draft. Replace the specific
-  anecdote and background below with your real story before this page goes
-  live - the tone/length is meant to be a template ("a few sentences,
-  honest and plain"), the specifics are not.
--->
-<section>
-  <div class="wrap reveal">
-    <div class="founder">
-      <div class="founder-avatar">S</div>
-      <div>
-        <h2>Why I built this</h2>
-        <div class="role">Founder, Sable</div>
-        <p>
-          I watched a plumbing crew lose a $2,000 water heater job to a competitor who happened to pick up the
-          phone first — while our guy was thirty seconds from calling the customer back. That's the whole problem.
-          It's not that trade businesses are bad at the work. It's that the work doesn't stop long enough to answer
-          the phone.
-        </p>
-        <p>
-          Sable exists to answer it for you: pick up, quote the job right, and get it on the calendar — so you're
-          not choosing between finishing what's in front of you and losing what's next.
-        </p>
-        <p>
-          It started for plumbers because that's what I knew. It works the same way for electricians, HVAC crews,
-          and locksmiths, because the actual problem — the phone doesn't stop ringing just because you're busy — is
-          the same for all of them.
-        </p>
-      </div>
+<section class="wrap" style="padding:20px 32px 64px;">
+  <div data-stagger style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:20px;">
+    <div style="background:#FBF9F5;border:1px solid #E7E0D4;border-radius:20px;padding:32px;">
+      <div style="font-family:'Oswald';font-weight:700;font-size:40px;color:#EADFCF;line-height:1;margin-bottom:14px;">01</div>
+      <h3 style="font-weight:600;font-size:21px;text-transform:uppercase;margin:0 0 10px;">Answer every call</h3>
+      <p style="font-size:15.5px;line-height:1.6;color:#6B665F;margin:0;">Day, night, or weekend — the phone never goes to voicemail again.</p>
+    </div>
+    <div style="background:#1F1E1D;border:1px solid #1F1E1D;border-radius:20px;padding:32px;color:#fff;">
+      <div style="font-family:'Oswald';font-weight:700;font-size:40px;color:#3a352d;line-height:1;margin-bottom:14px;">02</div>
+      <h3 style="font-weight:600;font-size:21px;text-transform:uppercase;margin:0 0 10px;color:#fff;">Quote it right</h3>
+      <p style="font-size:15.5px;line-height:1.6;color:#A8A29A;margin:0;">Accurate, itemized prices from your rate card in seconds. This is what we do best.</p>
+    </div>
+    <div style="background:#FBF9F5;border:1px solid #E7E0D4;border-radius:20px;padding:32px;">
+      <div style="font-family:'Oswald';font-weight:700;font-size:40px;color:#EADFCF;line-height:1;margin-bottom:14px;">03</div>
+      <h3 style="font-weight:600;font-size:21px;text-transform:uppercase;margin:0 0 10px;">Win the review</h3>
+      <p style="font-size:15.5px;line-height:1.6;color:#6B665F;margin:0;">The review bot turns finished jobs into fresh 5-star ratings that outrank rivals.</p>
     </div>
   </div>
 </section>
 
-<section>
-  <div class="wrap reveal">
-    <div class="section-eyebrow">What we're building toward</div>
-    <div class="values">
-      <div class="value">
-        <h3>Answer every call</h3>
-        <p>The most common way a trade business loses money isn't bad work. It's a call nobody picked up.</p>
-      </div>
-      <div class="value">
-        <h3>Quote it honestly</h3>
-        <p>Real pricing from your own catalog, not a made-up number to get someone off the phone.</p>
-      </div>
-      <div class="value">
-        <h3>Stay out of your way</h3>
-        <p>You already know how to run the business. Sable just makes sure fewer jobs slip through.</p>
+<section class="wrap" style="margin:0 auto 90px;padding:0 32px;">
+  <div data-reveal style="background:#B87333;border-radius:26px;padding:clamp(44px,5.5vw,72px);text-align:center;position:relative;overflow:hidden;">
+    <div style="position:relative;z-index:1;max-width:600px;margin:0 auto;">
+      <h2 style="font-weight:700;font-size:clamp(2rem,4.4vw,3.4rem);line-height:1;text-transform:uppercase;margin:0 0 18px;color:#fff;text-wrap:balance;">Stop losing jobs to voicemail</h2>
+      <p style="font-size:18px;line-height:1.55;color:rgba(255,255,255,.9);margin:0 0 30px;">Start free tonight, or book a walkthrough and we'll set it up with you.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:14px;justify-content:center;">
+        <a href="get-started.html" class="btn-light">Get started →</a>
+        <a href="contact.html" class="btn-outline-w">Contact us</a>
       </div>
     </div>
+    <div style="position:absolute;right:-80px;top:50%;transform:translateY(-50%);width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.14),transparent 70%);pointer-events:none;"></div>
   </div>
 </section>
 
-<section>
-  <div class="wrap">
-    <a class="scroll-img is-link" href="pricing.html" aria-label="See pricing">
-      <img
-        src="https://images.unsplash.com/photo-6dCFBWET48s?auto=format&fit=crop&w=1600&q=80"
-        alt="A plumber fixing a kitchen sink"
-        loading="lazy"
-        onerror="this.closest('.scroll-img').style.display='none'"
-      >
-    </a>
-    <div class="scroll-img-caption">Real jobs, real customers — the software just makes sure fewer of them get missed.</div>
-  </div>
-</section>
-
-<section>
-  <div class="wrap reveal">
-    <div class="section-head">
-      <div class="section-eyebrow">What customers say</div>
-      <h2>Early feedback, shown honestly.</h2>
-      <div class="placeholder-note">⚠ Illustrative examples — not real customer quotes yet</div>
+<footer style="border-top:1px solid #E1DACE;">
+  <div class="wrap" style="padding:34px 32px;display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:center;">
+    <a href="home.html" style="display:flex;align-items:center;gap:11px;"><div style="width:30px;height:30px;background:#B87333;border-radius:8px;display:flex;align-items:center;justify-content:center;"><span style="font-family:'Oswald';font-weight:700;font-size:17px;color:#fff;">S</span></div><span style="font-family:'Oswald';font-weight:600;font-size:21px;color:#1F1E1D;">Sable</span></a>
+    <div style="display:flex;gap:22px;flex-wrap:wrap;align-items:center;">
+      <a href="contact.html" class="nav-link">Contact</a>
+      <a href="sable-privacy.html" class="nav-link">Privacy</a>
+      <a href="sable-terms.html" class="nav-link">Terms</a>
     </div>
-    <div class="testimonial-grid">
-      <div class="testimonial">
-        <div class="example-tag">Example</div>
-        <p class="quote">I used to lose calls every time I was under a sink. Now Sable answers, quotes it, and I just show up.</p>
-        <div class="who">
-          <div class="avatar">JR</div>
-          <div class="who-text">
-            <div class="who-name">Jordan R.</div>
-            <div class="who-detail">Plumbing, example customer</div>
-          </div>
-        </div>
-      </div>
-      <div class="testimonial">
-        <div class="example-tag">Example</div>
-        <p class="quote">My techs used to spend twenty minutes a day calling people back. That's gone now.</p>
-        <div class="who">
-          <div class="avatar">DM</div>
-          <div class="who-text">
-            <div class="who-name">Dana M.</div>
-            <div class="who-detail">Electrical, example customer</div>
-          </div>
-        </div>
-      </div>
-      <div class="testimonial">
-        <div class="example-tag">Example</div>
-        <p class="quote">Setup was one phone call and we were live two days later. Didn't expect that.</p>
-        <div class="who">
-          <div class="avatar">KT</div>
-          <div class="who-text">
-            <div class="who-name">Kevin T.</div>
-            <div class="who-detail">HVAC, example customer</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section>
-  <div class="wrap">
-    <div class="cta-band reveal">
-      <h2>Want to see it running on your own numbers?</h2>
-      <p>7-day free trial. Setup takes one call.</p>
-      <a href="pricing.html" class="btn-primary">Start Free Trial</a>
-    </div>
-  </div>
-</section>
-
-<footer>
-  <div class="wrap">
-    <div>© <span id="year"></span> Sable</div>
-    <div>
-      <a href="home.html" style="margin-right:14px;">Home</a>
-      <a href="pricing.html" style="margin-right:14px;">Pricing</a>
-      <a href="sable-terms.html" style="margin-right:14px;">Terms</a>
-      <a href="sable-privacy.html">Privacy</a>
-    </div>
+    <span style="font-size:13.5px;color:#8A8580;">© <span class="yr">2026</span> Sable, Inc. All rights reserved.</span>
   </div>
 </footer>
 
 <script>
-  document.getElementById('year').textContent = new Date().getFullYear();
-  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (!reduceMotion) {
-    const revealEls = document.querySelectorAll('.reveal');
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('in');
-          io.unobserve(entry.target);
-        }
-      });
-    }, { threshold: 0.15 });
-    revealEls.forEach((el) => io.observe(el));
-  } else {
-    document.querySelectorAll('.reveal').forEach((el) => el.classList.add('in'));
+(function(){
+  var reduce=false; try{reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){}
+  document.querySelectorAll('.yr').forEach(function(el){el.textContent=new Date().getFullYear();});
+  var items=[];
+  document.querySelectorAll('[data-reveal]').forEach(function(el){items.push({el:el,delay:0});});
+  document.querySelectorAll('[data-stagger]').forEach(function(par){Array.prototype.forEach.call(par.children,function(c,i){items.push({el:c,delay:i*90});});});
+  if(!reduce&&'IntersectionObserver'in window){
+    var ease='cubic-bezier(.22,1,.36,1)';
+    items.forEach(function(it){it.el.style.opacity='0';it.el.style.transform='translateY(28px)';it.el.style.transition='opacity .7s '+ease+' '+it.delay+'ms, transform .7s '+ease+' '+it.delay+'ms';it.el.style.willChange='opacity, transform';});
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.style.opacity='1';e.target.style.transform='none';io.unobserve(e.target);}});},{threshold:0.12,rootMargin:'0px 0px -6% 0px'});
+    items.forEach(function(it){io.observe(it.el);});
   }
-
-  // Scroll-in image reveal - same behavior as home.html's, kept in its own
-  // scope so its IntersectionObserver doesn't collide with the .reveal one
-  // above.
-  (() => {
-    const scrollImgs = document.querySelectorAll('.scroll-img');
-    if (reduceMotion) {
-      scrollImgs.forEach((el) => el.classList.add('in'));
-      return;
-    }
-    const imgIo = new IntersectionObserver((entries) => {
-      entries.filter((e) => e.isIntersecting).forEach((entry, i) => {
-        imgIo.unobserve(entry.target);
-        setTimeout(() => entry.target.classList.add('in'), i * 90);
-      });
-    }, { threshold: 0.2, rootMargin: '0px 0px -40px 0px' });
-    scrollImgs.forEach((el) => imgIo.observe(el));
-  })();
+})();
 </script>
-
 </body>
 </html>

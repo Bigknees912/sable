@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' fonts.googleapis.com; font-src fonts.gstatic.com; img-src 'self' data:; script-src 'self' 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'">
+<title>Blog — Sable</title>
+<meta name="description" content="Practical advice on quoting, winning more jobs, and running a tighter trade business.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#F4F0E9;--paper2:#FBF9F5;--ink:#1F1E1D;--ink2:#5A554D;--muted:#8A8580;--copper:#B87333;--copper-dk:#9a5f28;--copper-lt:#D18E4E;--line:#E7E0D4;--line2:#E1DACE;--navy:#0A1128;}
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;overflow-x:hidden;min-height:100vh;}
+  html{scroll-behavior:smooth;}
+  a{color:var(--copper);text-decoration:none;}
+  a:hover{color:var(--copper-dk);}
+  h1,h2,h3{font-family:'Oswald',sans-serif;}
+  a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--copper);outline-offset:3px;border-radius:6px;}
+  input::placeholder,textarea::placeholder{color:#9a938a;}
+  input:focus,textarea:focus{outline:none;border-color:var(--copper) !important;box-shadow:0 0 0 3px rgba(184,115,51,.14);}
+  .wrap{max-width:1240px;margin:0 auto;}
+  .nav-link{color:#4A463F;font-size:15px;font-weight:500;transition:color .2s ease;}
+  .nav-link:hover{color:var(--ink);}
+  .nav-link.active{color:var(--ink);font-weight:600;}
+  .nav-cta{background:var(--ink);color:#fff;font-size:14px;font-weight:600;padding:12px 22px;border-radius:999px;transition:transform .2s ease,background .2s ease,box-shadow .2s ease;}
+  .nav-cta:hover{background:#000;color:#fff;transform:translateY(-2px);box-shadow:0 10px 22px -10px rgba(31,30,29,.6);}
+  .card-hover{transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease;}
+  .card-hover:hover{transform:translateY(-3px);box-shadow:0 24px 48px -32px rgba(31,30,29,.4);border-color:#D9CFBD;}
+  .btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:10px;background:var(--copper);color:#fff;font-size:16px;font-weight:600;padding:16px 30px;border-radius:999px;box-shadow:0 12px 28px -10px rgba(184,115,51,.7);transition:transform .2s ease,background .2s ease,box-shadow .2s ease;cursor:pointer;border:none;font-family:'Inter';}
+  .btn-primary:hover{background:#c98240;color:#fff;transform:translateY(-2px);box-shadow:0 16px 32px -10px rgba(184,115,51,.8);}
+  .btn-light{display:inline-flex;align-items:center;justify-content:center;gap:10px;background:#fff;color:#1F1E1D;font-size:16px;font-weight:600;padding:16px 30px;border-radius:999px;transition:transform .2s ease,box-shadow .2s ease;}
+  .btn-light:hover{color:#1F1E1D;transform:translateY(-2px);box-shadow:0 14px 30px -12px rgba(0,0,0,.35);}
+  .btn-outline-w{display:inline-flex;align-items:center;justify-content:center;gap:10px;background:transparent;border:1.5px solid rgba(255,255,255,.6);color:#fff;font-size:16px;font-weight:600;padding:16px 28px;border-radius:999px;transition:transform .2s ease,background .2s ease,border-color .2s ease;}
+  .btn-outline-w:hover{color:#fff;border-color:#fff;background:rgba(255,255,255,.1);transform:translateY(-2px);}
+  .btn-outline{display:inline-flex;align-items:center;justify-content:center;gap:10px;background:#fff;border:1.5px solid #DED7CB;color:#1F1E1D;font-size:15px;font-weight:600;padding:14px 22px;border-radius:999px;transition:border-color .2s ease,transform .2s ease,box-shadow .2s ease;}
+  .btn-outline:hover{border-color:var(--copper);color:#1F1E1D;transform:translateY(-2px);box-shadow:0 12px 24px -16px rgba(31,30,29,.4);}
+  .fld{width:100%;font-family:'Inter';font-size:15px;color:#1F1E1D;background:#FBF9F5;border:1.5px solid #E4DDD0;border-radius:12px;padding:13px 15px;transition:border-color .2s ease,box-shadow .2s ease;}
+  .fldlabel{display:block;font-size:12.5px;font-weight:600;color:#4A463F;margin-bottom:6px;}
+  @media (max-width:680px){header.nav{padding:18px 20px !important;}nav.nav-links{gap:16px !important;row-gap:10px !important;flex-wrap:wrap;justify-content:flex-end;}}
+  @media (prefers-reduced-motion: reduce){html{scroll-behavior:auto;}[data-reveal],[data-stagger]>*{opacity:1 !important;transform:none !important;}}
+</style>
+</head>
+<body>
+
+<header class="nav wrap" style="padding:26px 32px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;">
+  <a href="home.html" style="display:flex;align-items:center;gap:11px;">
+    <div style="width:34px;height:34px;background:#B87333;border-radius:9px;display:flex;align-items:center;justify-content:center;"><span style="font-family:'Oswald';font-weight:700;font-size:20px;color:#fff;line-height:1;">S</span></div>
+    <span style="font-family:'Oswald';font-weight:600;font-size:24px;color:#1F1E1D;">Sable</span>
+  </a>
+  <nav class="nav-links" style="display:flex;align-items:center;gap:34px;flex-wrap:wrap;justify-content:flex-end;">
+    <a href="home.html" class="nav-link active">Home</a>
+    <a href="features.html" class="nav-link">Features</a>
+    <a href="pricing.html" class="nav-link">Pricing</a>
+    <a href="login.html" class="nav-link">Log In</a>
+    <a href="get-started.html" class="nav-cta">Get Started</a>
+  </nav>
+</header>
+
+<section style="max-width:900px;margin:0 auto;padding:52px 32px 20px;text-align:center;">
+  <div data-reveal>
+    <div style="display:inline-flex;align-items:center;gap:9px;background:rgba(184,115,51,.1);border:1px solid rgba(184,115,51,.24);padding:7px 15px;border-radius:999px;margin-bottom:24px;">
+      <span style="width:7px;height:7px;border-radius:50%;background:#B87333;"></span>
+      <span style="font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#9a5f28;">Field notes</span>
+    </div>
+    <h1 style="font-weight:700;font-size:clamp(2.6rem,6vw,4.6rem);line-height:.98;letter-spacing:-.02em;margin:0 auto 20px;text-transform:uppercase;max-width:16ch;text-wrap:balance;">The Sable blog</h1>
+    <p style="font-size:19px;line-height:1.55;color:#5A554D;max-width:52ch;margin:0 auto;text-wrap:pretty;">Practical advice on quoting, winning more jobs, and running a tighter trade business.</p>
+  </div>
+</section>
+<section class="wrap" style="padding:44px 32px 80px;">
+  <div data-stagger style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:22px;">
+      <a href="#" class="card-hover" style="display:flex;flex-direction:column;background:#FBF9F5;border:1px solid #E7E0D4;border-radius:20px;overflow:hidden;color:inherit;">
+        <div style="height:120px;background:linear-gradient(135deg,#B87333,#9a5f28);display:flex;align-items:flex-end;padding:16px;">
+          <span style="font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#fff;background:rgba(31,30,29,.28);padding:5px 11px;border-radius:999px;">Quoting</span>
+        </div>
+        <div style="padding:24px;display:flex;flex-direction:column;flex:1;">
+          <h3 style="font-weight:600;font-size:20px;line-height:1.15;text-transform:uppercase;color:#1F1E1D;margin:0 0 10px;text-wrap:balance;">The 2 a.m. call is worth more than you think</h3>
+          <p style="font-size:14.5px;line-height:1.55;color:#6B665F;margin:0 0 18px;flex:1;text-wrap:pretty;">Why after-hours emergencies are your highest-margin jobs &mdash; and how to stop sending them to voicemail.</p>
+          <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#8A8580;">8 min read &middot; Jul 2026</div>
+        </div>
+      </a>
+      <a href="#" class="card-hover" style="display:flex;flex-direction:column;background:#FBF9F5;border:1px solid #E7E0D4;border-radius:20px;overflow:hidden;color:inherit;">
+        <div style="height:120px;background:linear-gradient(135deg,#c98240,#B87333);display:flex;align-items:flex-end;padding:16px;">
+          <span style="font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#fff;background:rgba(31,30,29,.28);padding:5px 11px;border-radius:999px;">Quoting</span>
+        </div>
+        <div style="padding:24px;display:flex;flex-direction:column;flex:1;">
+          <h3 style="font-weight:600;font-size:20px;line-height:1.15;text-transform:uppercase;color:#1F1E1D;margin:0 0 10px;text-wrap:balance;">How to price a job before you see it</h3>
+          <p style="font-size:14.5px;line-height:1.55;color:#6B665F;margin:0 0 18px;flex:1;text-wrap:pretty;">A simple framework for accurate phone quotes that win the work without eating your margin.</p>
+          <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#8A8580;">6 min read &middot; Jun 2026</div>
+        </div>
+      </a>
+      <a href="#" class="card-hover" style="display:flex;flex-direction:column;background:#FBF9F5;border:1px solid #E7E0D4;border-radius:20px;overflow:hidden;color:inherit;">
+        <div style="height:120px;background:linear-gradient(135deg,#1F1E1D,#3a352d);display:flex;align-items:flex-end;padding:16px;">
+          <span style="font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#fff;background:rgba(31,30,29,.28);padding:5px 11px;border-radius:999px;">Reviews</span>
+        </div>
+        <div style="padding:24px;display:flex;flex-direction:column;flex:1;">
+          <h3 style="font-weight:600;font-size:20px;line-height:1.15;text-transform:uppercase;color:#1F1E1D;margin:0 0 10px;text-wrap:balance;">Outranking the shop down the street</h3>
+          <p style="font-size:14.5px;line-height:1.55;color:#6B665F;margin:0 0 18px;flex:1;text-wrap:pretty;">The steady drip of fresh 5-star reviews that pushes you to the top of local search.</p>
+          <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#8A8580;">5 min read &middot; Jun 2026</div>
+        </div>
+      </a>
+      <a href="#" class="card-hover" style="display:flex;flex-direction:column;background:#FBF9F5;border:1px solid #E7E0D4;border-radius:20px;overflow:hidden;color:inherit;">
+        <div style="height:120px;background:linear-gradient(135deg,#B87333,#9a5f28);display:flex;align-items:flex-end;padding:16px;">
+          <span style="font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#fff;background:rgba(31,30,29,.28);padding:5px 11px;border-radius:999px;">Operations</span>
+        </div>
+        <div style="padding:24px;display:flex;flex-direction:column;flex:1;">
+          <h3 style="font-weight:600;font-size:20px;line-height:1.15;text-transform:uppercase;color:#1F1E1D;margin:0 0 10px;text-wrap:balance;">Dispatching without the group text</h3>
+          <p style="font-size:14.5px;line-height:1.55;color:#6B665F;margin:0 0 18px;flex:1;text-wrap:pretty;">Getting the right tech to the right job &mdash; and keeping customers updated automatically.</p>
+          <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#8A8580;">7 min read &middot; May 2026</div>
+        </div>
+      </a>
+      <a href="#" class="card-hover" style="display:flex;flex-direction:column;background:#FBF9F5;border:1px solid #E7E0D4;border-radius:20px;overflow:hidden;color:inherit;">
+        <div style="height:120px;background:linear-gradient(135deg,#c98240,#B87333);display:flex;align-items:flex-end;padding:16px;">
+          <span style="font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#fff;background:rgba(31,30,29,.28);padding:5px 11px;border-radius:999px;">Growth</span>
+        </div>
+        <div style="padding:24px;display:flex;flex-direction:column;flex:1;">
+          <h3 style="font-weight:600;font-size:20px;line-height:1.15;text-transform:uppercase;color:#1F1E1D;margin:0 0 10px;text-wrap:balance;">When to hire your next technician</h3>
+          <p style="font-size:14.5px;line-height:1.55;color:#6B665F;margin:0 0 18px;flex:1;text-wrap:pretty;">Reading the signals in your call volume so you grow at the right moment, not too late.</p>
+          <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#8A8580;">6 min read &middot; May 2026</div>
+        </div>
+      </a>
+      <a href="#" class="card-hover" style="display:flex;flex-direction:column;background:#FBF9F5;border:1px solid #E7E0D4;border-radius:20px;overflow:hidden;color:inherit;">
+        <div style="height:120px;background:linear-gradient(135deg,#1F1E1D,#3a352d);display:flex;align-items:flex-end;padding:16px;">
+          <span style="font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#fff;background:rgba(31,30,29,.28);padding:5px 11px;border-radius:999px;">Playbook</span>
+        </div>
+        <div style="padding:24px;display:flex;flex-direction:column;flex:1;">
+          <h3 style="font-weight:600;font-size:20px;line-height:1.15;text-transform:uppercase;color:#1F1E1D;margin:0 0 10px;text-wrap:balance;">A front office that never sleeps</h3>
+          <p style="font-size:14.5px;line-height:1.55;color:#6B665F;margin:0 0 18px;flex:1;text-wrap:pretty;">What changes when every single call gets answered &mdash; a week in the life of a Sable shop.</p>
+          <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#8A8580;">9 min read &middot; Apr 2026</div>
+        </div>
+      </a>
+  </div>
+</section>
+
+<footer style="border-top:1px solid #E1DACE;">
+  <div class="wrap" style="padding:34px 32px;display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:center;">
+    <a href="home.html" style="display:flex;align-items:center;gap:11px;"><div style="width:30px;height:30px;background:#B87333;border-radius:8px;display:flex;align-items:center;justify-content:center;"><span style="font-family:'Oswald';font-weight:700;font-size:17px;color:#fff;">S</span></div><span style="font-family:'Oswald';font-weight:600;font-size:21px;color:#1F1E1D;">Sable</span></a>
+    <div style="display:flex;gap:22px;flex-wrap:wrap;align-items:center;">
+      <a href="about.html" class="nav-link">About</a>
+      <a href="blog.html" class="nav-link">Blog</a>
+      <a href="integrations.html" class="nav-link">Integrations</a>
+      <a href="changelog.html" class="nav-link">Changelog</a>
+      <a href="contact.html" class="nav-link">Contact</a>
+      <a href="sable-privacy.html" class="nav-link">Privacy</a>
+      <a href="sable-terms.html" class="nav-link">Terms</a>
+    </div>
+    <span style="font-size:13.5px;color:#8A8580;">&copy; <span class="yr">2026</span> Sable, Inc. All rights reserved.</span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var reduce=false; try{reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){}
+  document.querySelectorAll('.yr').forEach(function(el){el.textContent=new Date().getFullYear();});
+  var items=[];
+  document.querySelectorAll('[data-reveal]').forEach(function(el){items.push({el:el,delay:0});});
+  document.querySelectorAll('[data-stagger]').forEach(function(par){Array.prototype.forEach.call(par.children,function(c,i){items.push({el:c,delay:i*90});});});
+  if(!reduce&&'IntersectionObserver'in window){
+    var ease='cubic-bezier(.22,1,.36,1)';
+    items.forEach(function(it){it.el.style.opacity='0';it.el.style.transform='translateY(28px)';it.el.style.transition='opacity .7s '+ease+' '+it.delay+'ms, transform .7s '+ease+' '+it.delay+'ms';it.el.style.willChange='opacity, transform';});
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.style.opacity='1';e.target.style.transform='none';io.unobserve(e.target);}});},{threshold:0.12,rootMargin:'0px 0px -6% 0px'});
+    items.forEach(function(it){io.observe(it.el);});
+  }
+})();
+</script>
+</body>
+</html>

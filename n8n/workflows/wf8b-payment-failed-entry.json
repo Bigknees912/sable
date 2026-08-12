@@ -1,0 +1,747 @@
+{
+  "name": "WF8b: Payment Failed \u2014 Webhook Entry Point",
+  "nodes": [
+    {
+      "parameters": {
+        "events": [
+          "invoice.payment_failed"
+        ]
+      },
+      "id": "31fe0c7f-a1a3-42e9-bbee-aa983a9c354e",
+      "name": "Stripe: invoice.payment_failed",
+      "type": "n8n-nodes-base.stripeTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        288
+      ],
+      "webhookId": "c9610e58-a372-4ec2-9569-543ed9818394"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f1",
+              "name": "invoice_id",
+              "type": "string",
+              "value": "={{ $json.data.object.id }}"
+            },
+            {
+              "id": "f2",
+              "name": "customer_id",
+              "type": "string",
+              "value": "={{ $json.data.object.customer }}"
+            },
+            {
+              "id": "f3",
+              "name": "customer_email",
+              "type": "string",
+              "value": "={{ $json.data.object.customer_email || \"\" }}"
+            },
+            {
+              "id": "f4",
+              "name": "amount_due",
+              "type": "number",
+              "value": "={{ $json.data.object.amount_due || 0 }}"
+            },
+            {
+              "id": "f5",
+              "name": "attempt_count",
+              "type": "number",
+              "value": "={{ $json.data.object.attempt_count || 1 }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "719c0d25-0352-4183-8306-c8f4fe9bc1fc",
+      "name": "Extract Event Fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        224,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.invoice_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "8b8b183e-7d68-4d28-91b1-298a9e05fb63",
+      "name": "Has Invoice ID?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        448,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "companies_with_billing",
+        "returnAll": true,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "stripe_customer_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.customer_id }}"
+            }
+          ]
+        }
+      },
+      "id": "748100a2-6352-48f0-8fb5-27d8f93466a5",
+      "name": "Get Company",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        672,
+        192
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c2",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "1f661b90-0430-434b-ab97-9e423b041d84",
+      "name": "Company Found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        896,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const company = $input.first().json;\nconst event = $('Extract Event Fields').first().json;\n\nconst rawEmail = (event.customer_email && event.customer_email.length > 0)\n  ? event.customer_email\n  : (company.contact_email || '');\n\nconst cents = event.amount_due || 0;\nconst dollars = Math.floor(cents / 100);\nconst remainder = cents % 100;\nconst centsStr = remainder < 10 ? '0' + remainder : '' + remainder;\nconst amountFormatted = '$' + dollars + '.' + centsStr;\n\nconst existingLog = Array.isArray(company.payment_failure_log)\n  ? company.payment_failure_log\n  : [];\n\nreturn [{\n  json: {\n    company_id: company.id || '',\n    company_name: company.name || '',\n    existing_failure_log: existingLog,\n    invoice_id: event.invoice_id || '',\n    customer_id: event.customer_id || '',\n    customer_email: rawEmail,\n    amount_due: cents,\n    amount_formatted: amountFormatted,\n    attempt_count: event.attempt_count || 1,\n  }\n}];"
+      },
+      "id": "b08afaea-20a0-46fd-96ff-2c06533a02d7",
+      "name": "Combine Bundle",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "payment_retry_queue",
+        "returnAll": true,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "invoice_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.invoice_id }}"
+            }
+          ]
+        }
+      },
+      "id": "c4f2416a-4a2a-474a-a376-45f451b4ba47",
+      "name": "Check Queue",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1344,
+        96
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const result = $input.first().json;\nconst exists = !!(result && result.invoice_id && result.invoice_id !== '');\nreturn [{ json: { queue_exists: exists } }];"
+      },
+      "id": "56865e68-2658-40ae-9dfb-a8ae81fda91d",
+      "name": "Evaluate Queue Check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1568,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c3",
+              "leftValue": "={{ $json.queue_exists }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "e7c2511c-e4d8-4703-9bc7-5f72c4caa34b",
+      "name": "Already Queued?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1792,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "r3",
+              "name": "reason",
+              "type": "string",
+              "value": "Stopped: invoice already in payment_retry_queue (idempotency guard)"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "88f642f4-8a83-478c-bd9f-4167ae782d3a",
+      "name": "Stop: Already Queued",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        2016,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "from",
+              "value": "<__PLACEHOLDER_VALUE__Your Platform Name__> <__PLACEHOLDER_VALUE__Resend From header, e.g. Sable <alerts@runsable.com>__>"
+            },
+            {
+              "name": "to",
+              "value": "={{ $('Combine Bundle').first().json.customer_email }}"
+            },
+            {
+              "name": "subject",
+              "value": "Action required: Payment failed"
+            },
+            {
+              "name": "text",
+              "value": "={{ 'We could not process your payment of ' + $('Combine Bundle').first().json.amount_formatted + '. Please update your card details to avoid any service interruption.' }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "e6c0c12c-0bdc-4900-913d-4e311056fb92",
+      "name": "Send Payment Failed Email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2016,
+        192
+      ],
+      "onError": "continueErrorOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "Resend"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "payment_retry_queue",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "invoice_id",
+              "fieldValue": "={{ $('Combine Bundle').first().json.invoice_id }}"
+            },
+            {
+              "fieldId": "company_id",
+              "fieldValue": "={{ $('Combine Bundle').first().json.company_id }}"
+            },
+            {
+              "fieldId": "customer_email",
+              "fieldValue": "={{ $('Combine Bundle').first().json.customer_email }}"
+            },
+            {
+              "fieldId": "amount_due",
+              "fieldValue": "={{ $('Combine Bundle').first().json.amount_due }}"
+            },
+            {
+              "fieldId": "attempt_number",
+              "fieldValue": "1"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "pending"
+            },
+            {
+              "fieldId": "next_retry_at",
+              "fieldValue": "={{ $now.plus({ days: 1 }).toISO() }}"
+            },
+            {
+              "fieldId": "created_at",
+              "fieldValue": "={{ $now.toISO() }}"
+            },
+            {
+              "fieldId": "email_sent",
+              "fieldValue": "true"
+            }
+          ]
+        }
+      },
+      "id": "98df98d5-c547-4a7d-9004-88ca0c068bd9",
+      "name": "Insert Queue Row",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2240,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const bundle = $('Combine Bundle').first().json;\nconst existingLog = Array.isArray(bundle.existing_failure_log) ? bundle.existing_failure_log : [];\nconst newEntry = {\n  event: 'initial_failure',\n  invoice_id: bundle.invoice_id,\n  timestamp: new Date().toISOString(),\n  email_sent: true,\n  attempt: 1,\n};\nreturn [{ json: { company_id: bundle.company_id, payment_failure_log: existingLog.concat([newEntry]) } }];"
+      },
+      "id": "4d49c074-8bdb-4464-9da3-b7bf8de9df94",
+      "name": "Build Log Update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2464,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "companies",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.company_id }}"
+            }
+          ]
+        },
+        "dataToSend": "autoMapInputData",
+        "inputsToIgnore": "company_id"
+      },
+      "id": "ec915037-abe5-4f6f-8eed-674d55b675d6",
+      "name": "Update Company Log",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2688,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "tableId": "payment_retry_queue",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "invoice_id",
+              "fieldValue": "={{ $('Combine Bundle').first().json.invoice_id }}"
+            },
+            {
+              "fieldId": "company_id",
+              "fieldValue": "={{ $('Combine Bundle').first().json.company_id }}"
+            },
+            {
+              "fieldId": "customer_email",
+              "fieldValue": "={{ $('Combine Bundle').first().json.customer_email }}"
+            },
+            {
+              "fieldId": "amount_due",
+              "fieldValue": "={{ $('Combine Bundle').first().json.amount_due }}"
+            },
+            {
+              "fieldId": "attempt_number",
+              "fieldValue": "1"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "pending"
+            },
+            {
+              "fieldId": "next_retry_at",
+              "fieldValue": "={{ $now.plus({ days: 1 }).toISO() }}"
+            },
+            {
+              "fieldId": "created_at",
+              "fieldValue": "={{ $now.toISO() }}"
+            },
+            {
+              "fieldId": "email_sent",
+              "fieldValue": "false"
+            }
+          ]
+        }
+      },
+      "id": "4ddefc9f-b6a2-4dd4-81da-bd3e7bcbba2e",
+      "name": "Insert Queue Row (No Email)",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2240,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const bundle = $('Combine Bundle').first().json;\nconst existingLog = Array.isArray(bundle.existing_failure_log) ? bundle.existing_failure_log : [];\nconst newEntry = {\n  event: 'initial_failure',\n  invoice_id: bundle.invoice_id,\n  timestamp: new Date().toISOString(),\n  email_sent: false,\n  attempt: 1,\n};\nreturn [{ json: { company_id: bundle.company_id, payment_failure_log: existingLog.concat([newEntry]) } }];"
+      },
+      "id": "8b3f694b-5bad-498a-8d38-b91f3e1ecc90",
+      "name": "Build Log Update (No Email)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2464,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "companies",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.company_id }}"
+            }
+          ]
+        },
+        "dataToSend": "autoMapInputData",
+        "inputsToIgnore": "company_id"
+      },
+      "id": "6d64c5b1-ac29-4cac-ace5-1f367929f02e",
+      "name": "Update Company Log (No Email)",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2688,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "r2",
+              "name": "reason",
+              "type": "string",
+              "value": "Stopped: no company row matches stripe_customer_id"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "08e852de-fe20-4391-808f-494f90044862",
+      "name": "Stop: No Company Found",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1120,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "r1",
+              "name": "reason",
+              "type": "string",
+              "value": "Stopped: invoice_id missing from Stripe event"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f9a72aab-943f-4c8a-bdb7-0119b03965e0",
+      "name": "Stop: No Invoice ID",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        672,
+        384
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Stripe: invoice.payment_failed": {
+      "main": [
+        [
+          {
+            "node": "Extract Event Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Event Fields": {
+      "main": [
+        [
+          {
+            "node": "Has Invoice ID?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Invoice ID?": {
+      "main": [
+        [
+          {
+            "node": "Get Company",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop: No Invoice ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Company": {
+      "main": [
+        [
+          {
+            "node": "Company Found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Company Found?": {
+      "main": [
+        [
+          {
+            "node": "Combine Bundle",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stop: No Company Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine Bundle": {
+      "main": [
+        [
+          {
+            "node": "Check Queue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Queue": {
+      "main": [
+        [
+          {
+            "node": "Evaluate Queue Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluate Queue Check": {
+      "main": [
+        [
+          {
+            "node": "Already Queued?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Already Queued?": {
+      "main": [
+        [
+          {
+            "node": "Stop: Already Queued",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Payment Failed Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Payment Failed Email": {
+      "main": [
+        [
+          {
+            "node": "Insert Queue Row",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Insert Queue Row (No Email)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Queue Row": {
+      "main": [
+        [
+          {
+            "node": "Build Log Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Log Update": {
+      "main": [
+        [
+          {
+            "node": "Update Company Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Queue Row (No Email)": {
+      "main": [
+        [
+          {
+            "node": "Build Log Update (No Email)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Log Update (No Email)": {
+      "main": [
+        [
+          {
+            "node": "Update Company Log (No Email)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "3419b944-104f-4af2-a80f-e39d877fa953",
+  "meta": {
+    "instanceId": "1f898378341ccb341e91602af9fe7508a6860290fcee6f09244305e2b8d071a0"
+  },
+  "nodeGroups": [],
+  "id": "lflGDA3boUM004Gm",
+  "tags": []
+}

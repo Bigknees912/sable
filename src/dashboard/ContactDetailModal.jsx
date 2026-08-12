@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { X, Phone, Mail, MapPin, StickyNote, PhoneCall, MessageCircle, MessageCircleOff, ShieldOff, Trash2, CalendarClock, Plus, CheckCircle2, FolderOpen } from 'lucide-react'
 import { listInteractions, addInteraction, updateContactTags, updateContactConsent, deleteContactPii, PIPELINE_STAGES } from '../lib/crm'
+import { useEscapeToClose } from './useEscapeToClose'
 import { listContractsForCustomer, createContract, markContractServiced, cancelContract, isOverdue, isDueSoon } from '../lib/contracts'
 import { LIGHT } from '../theme'
 import { initialsOf, LoadingState, ErrorState, ErrorBanner, money } from './ui'
@@ -21,6 +22,7 @@ function formatDate(d) {
 // editor, the interaction timeline, and (see below) recurring maintenance
 // contracts (view/add/mark serviced/cancel).
 export default function ContactDetailModal({ contact, allTags, onClose, onTagsChanged, onConsentChanged, onPiiDeleted, onContractsChanged }) {
+  useEscapeToClose(onClose)
   const [interactions, setInteractions] = useState([])
   const [tags, setTags] = useState(contact.tags || [])
   const [tagInput, setTagInput] = useState('')
@@ -206,7 +208,7 @@ export default function ContactDetailModal({ contact, allTags, onClose, onTagsCh
               <div style={{ fontSize: 11, color: LIGHT.sub }}>{stageLabel}</div>
             </div>
           </div>
-          <button className="tap" onClick={onClose}><X size={20} color={LIGHT.sub} /></button>
+          <button type="button" className="tap" onClick={onClose} aria-label="Close"><X size={20} color={LIGHT.sub} aria-hidden="true" /></button>
         </div>
 
         <button
@@ -236,12 +238,16 @@ export default function ContactDetailModal({ contact, allTags, onClose, onTagsCh
 
         {!piiDeletedAt && contact.phone && (
           <>
-            <div
+            <button
+              type="button"
+              role="switch"
+              aria-checked={smsConsent}
               className="tap"
               onClick={consentSaving ? undefined : toggleConsent}
-              style={{ display: 'flex', alignItems: 'center', gap: 10, background: smsConsent ? LIGHT.successSoft : LIGHT.bg, borderRadius: 14, padding: 12, marginBottom: 8, opacity: consentSaving ? 0.6 : 1 }}
+              disabled={consentSaving}
+              style={{ width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 10, background: smsConsent ? LIGHT.successSoft : LIGHT.bg, borderRadius: 14, padding: 12, marginBottom: 8, opacity: consentSaving ? 0.6 : 1 }}
             >
-              {smsConsent ? <MessageCircle size={16} color={LIGHT.success} /> : <MessageCircleOff size={16} color={LIGHT.sub} />}
+              {smsConsent ? <MessageCircle size={16} color={LIGHT.success} aria-hidden="true" /> : <MessageCircleOff size={16} color={LIGHT.sub} aria-hidden="true" />}
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 12.5, fontWeight: 700, color: smsConsent ? LIGHT.success : LIGHT.ink }}>
                   {smsConsent ? 'SMS consent on file' : 'No SMS consent on file'}
@@ -250,7 +256,7 @@ export default function ContactDetailModal({ contact, allTags, onClose, onTagsCh
                   {smsConsent ? 'Tap to revoke — no more automated texts will send.' : 'Tap only if the customer has agreed to receive texts.'}
                 </div>
               </div>
-            </div>
+            </button>
             <ErrorText>{consentError}</ErrorText>
           </>
         )}
@@ -341,20 +347,20 @@ export default function ContactDetailModal({ contact, allTags, onClose, onTagsCh
 
               {addingContract ? (
                 <div style={{ background: LIGHT.card, borderRadius: 12, padding: 10 }}>
-                  <FieldLabel>Contract name</FieldLabel>
-                  <TextInput value={contractName} onChange={setContractName} placeholder="Annual Furnace Tune-Up" />
+                  <FieldLabel htmlFor="field-contract-name-1">Contract name</FieldLabel>
+                  <TextInput id="field-contract-name-1" value={contractName} onChange={setContractName} placeholder="Annual Furnace Tune-Up" />
                   <div style={{ display: 'flex', gap: 10 }}>
                     <div style={{ flex: 1 }}>
-                      <FieldLabel>Frequency (months)</FieldLabel>
-                      <TextInput value={contractFrequency} onChange={setContractFrequency} placeholder="12" />
+                      <FieldLabel htmlFor="field-frequency-months-1">Frequency (months)</FieldLabel>
+                      <TextInput id="field-frequency-months-1" value={contractFrequency} onChange={setContractFrequency} placeholder="12" />
                     </div>
                     <div style={{ flex: 1 }}>
-                      <FieldLabel>Price ($)</FieldLabel>
-                      <TextInput value={contractPrice} onChange={setContractPrice} placeholder="189" />
+                      <FieldLabel htmlFor="field-price-1">Price ($)</FieldLabel>
+                      <TextInput id="field-price-1" value={contractPrice} onChange={setContractPrice} placeholder="189" />
                     </div>
                   </div>
-                  <FieldLabel>Next due date</FieldLabel>
-                  <TextInput value={contractNextDue} onChange={setContractNextDue} type="date" />
+                  <FieldLabel htmlFor="field-next-due-date-1">Next due date</FieldLabel>
+                  <TextInput id="field-next-due-date-1" value={contractNextDue} onChange={setContractNextDue} type="date" />
                   <ErrorText>{addContractError}</ErrorText>
                   <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
                     <PrimaryButton onClick={submitContract} disabled={savingContract} style={{ flex: 1 }}>

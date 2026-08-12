@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' fonts.googleapis.com; font-src fonts.gstatic.com; img-src 'self' data:; script-src 'self' 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'">
+<title>Get started — Sable</title>
+<meta name="description" content="Start a 7-day free trial or book a walkthrough tailored to your trade.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#F4F0E9;--paper2:#FBF9F5;--ink:#1F1E1D;--ink2:#5A554D;--muted:#8A8580;--copper:#B87333;--copper-dk:#9a5f28;--copper-lt:#D18E4E;--line:#E7E0D4;--line2:#E1DACE;--navy:#0A1128;}
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;overflow-x:hidden;min-height:100vh;}
+  html{scroll-behavior:smooth;}
+  a{color:var(--copper);text-decoration:none;}
+  a:hover{color:var(--copper-dk);}
+  h1,h2,h3{font-family:'Oswald',sans-serif;}
+  a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--copper);outline-offset:3px;border-radius:6px;}
+  input::placeholder,textarea::placeholder{color:#9a938a;}
+  input:focus,textarea:focus{outline:none;border-color:var(--copper) !important;box-shadow:0 0 0 3px rgba(184,115,51,.14);}
+  .wrap{max-width:1240px;margin:0 auto;}
+  .nav-link{color:#4A463F;font-size:15px;font-weight:500;transition:color .2s ease;}
+  .nav-link:hover{color:var(--ink);}
+  .nav-link.active{color:var(--ink);font-weight:600;}
+  .nav-cta{background:var(--ink);color:#fff;font-size:14px;font-weight:600;padding:12px 22px;border-radius:999px;transition:transform .2s ease,background .2s ease,box-shadow .2s ease;}
+  .nav-cta:hover{background:#000;color:#fff;transform:translateY(-2px);box-shadow:0 10px 22px -10px rgba(31,30,29,.6);}
+  .card-hover{transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease;}
+  .card-hover:hover{transform:translateY(-3px);box-shadow:0 24px 48px -32px rgba(31,30,29,.4);border-color:#D9CFBD;}
+  .btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:10px;background:var(--copper);color:#fff;font-size:16px;font-weight:600;padding:16px 30px;border-radius:999px;box-shadow:0 12px 28px -10px rgba(184,115,51,.7);transition:transform .2s ease,background .2s ease,box-shadow .2s ease;cursor:pointer;border:none;font-family:'Inter';}
+  .btn-primary:hover{background:#c98240;color:#fff;transform:translateY(-2px);box-shadow:0 16px 32px -10px rgba(184,115,51,.8);}
+  .btn-light{display:inline-flex;align-items:center;justify-content:center;gap:10px;background:#fff;color:#1F1E1D;font-size:16px;font-weight:600;padding:16px 30px;border-radius:999px;transition:transform .2s ease,box-shadow .2s ease;}
+  .btn-light:hover{color:#1F1E1D;transform:translateY(-2px);box-shadow:0 14px 30px -12px rgba(0,0,0,.35);}
+  .btn-outline-w{display:inline-flex;align-items:center;justify-content:center;gap:10px;background:transparent;border:1.5px solid rgba(255,255,255,.6);color:#fff;font-size:16px;font-weight:600;padding:16px 28px;border-radius:999px;transition:transform .2s ease,background .2s ease,border-color .2s ease;}
+  .btn-outline-w:hover{color:#fff;border-color:#fff;background:rgba(255,255,255,.1);transform:translateY(-2px);}
+  .btn-outline{display:inline-flex;align-items:center;justify-content:center;gap:10px;background:#fff;border:1.5px solid #DED7CB;color:#1F1E1D;font-size:15px;font-weight:600;padding:14px 22px;border-radius:999px;transition:border-color .2s ease,transform .2s ease,box-shadow .2s ease;}
+  .btn-outline:hover{border-color:var(--copper);color:#1F1E1D;transform:translateY(-2px);box-shadow:0 12px 24px -16px rgba(31,30,29,.4);}
+  .fld{width:100%;font-family:'Inter';font-size:15px;color:#1F1E1D;background:#FBF9F5;border:1.5px solid #E4DDD0;border-radius:12px;padding:13px 15px;transition:border-color .2s ease,box-shadow .2s ease;}
+  .fldlabel{display:block;font-size:12.5px;font-weight:600;color:#4A463F;margin-bottom:6px;}
+  @media (max-width:680px){header.nav{padding:18px 20px !important;}nav.nav-links{gap:16px !important;row-gap:10px !important;flex-wrap:wrap;justify-content:flex-end;}}
+  @media (prefers-reduced-motion: reduce){html{scroll-behavior:auto;}[data-reveal],[data-stagger]>*{opacity:1 !important;transform:none !important;}}
+</style>
+</head>
+<body>
+
+<header class="nav wrap" style="padding:26px 32px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;">
+  <a href="home.html" style="display:flex;align-items:center;gap:11px;">
+    <div style="width:34px;height:34px;background:#B87333;border-radius:9px;display:flex;align-items:center;justify-content:center;"><span style="font-family:'Oswald';font-weight:700;font-size:20px;color:#fff;line-height:1;">S</span></div>
+    <span style="font-family:'Oswald';font-weight:600;font-size:24px;color:#1F1E1D;">Sable</span>
+  </a>
+  <nav class="nav-links" style="display:flex;align-items:center;gap:34px;flex-wrap:wrap;justify-content:flex-end;">
+    <a href="home.html" class="nav-link active">Home</a>
+    <a href="features.html" class="nav-link">Features</a>
+    <a href="pricing.html" class="nav-link">Pricing</a>
+    <a href="login.html" class="nav-link">Log In</a>
+    <a href="get-started.html" class="nav-cta">Get Started</a>
+  </nav>
+</header>
+
+<section style="max-width:1000px;margin:0 auto;padding:44px 32px 20px;text-align:center;">
+  <div data-reveal>
+    <div style="display:inline-flex;align-items:center;gap:9px;background:rgba(184,115,51,.1);border:1px solid rgba(184,115,51,.24);padding:7px 15px;border-radius:999px;margin-bottom:24px;">
+      <span style="width:7px;height:7px;border-radius:50%;background:#B87333;"></span>
+      <span style="font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#9a5f28;">Get started</span>
+    </div>
+    <h1 style="font-weight:700;font-size:clamp(2.6rem,6vw,4.6rem);line-height:.98;letter-spacing:-.02em;margin:0 auto 20px;text-transform:uppercase;max-width:20ch;text-wrap:balance;">Two ways to begin</h1>
+    <p style="font-size:19px;line-height:1.55;color:#5A554D;max-width:52ch;margin:0 auto;text-wrap:pretty;">Start your free trial and take the guided tour &mdash; or book a walkthrough tailored to your trade. Whatever's easier.</p>
+  </div>
+</section>
+<section style="max-width:1120px;margin:0 auto;padding:40px 32px 32px;">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:24px;align-items:start;">
+    <form data-reveal onsubmit="window.location.href='index.html';return false;" style="background:#fff;border:1px solid #ECE8E1;border-radius:24px;padding:clamp(26px,3vw,40px);box-shadow:0 30px 64px -40px rgba(31,30,29,.4);">
+      <div style="display:inline-flex;align-items:center;gap:8px;background:#F6ECE0;border:1px solid #E7CFB2;padding:6px 13px;border-radius:999px;margin-bottom:18px;"><span style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9a5f28;">Do it yourself</span></div>
+      <h2 style="font-weight:600;font-size:clamp(1.7rem,2.6vw,2.3rem);text-transform:uppercase;letter-spacing:-.01em;margin:0 0 8px;">Start a free trial</h2>
+      <p style="font-size:15.5px;line-height:1.55;color:#7A746B;margin:0 0 24px;">Set up in a few minutes, then take a quick guided tour of the whole app.</p>
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div><label class="fldlabel" for="g-biz">Business name</label><input id="g-biz" type="text" class="fld" placeholder="Apex Plumbing"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+          <div><label class="fldlabel" for="g-name">Your name</label><input id="g-name" type="text" class="fld" placeholder="Sam Rivera"></div>
+          <div><label class="fldlabel" for="g-phone">Phone</label><input id="g-phone" type="tel" class="fld" placeholder="(555) 000-0000"></div>
+        </div>
+        <div><label class="fldlabel" for="g-email">Work email</label><input id="g-email" type="email" class="fld" placeholder="you@business.com"></div>
+        <div>
+          <span class="fldlabel">Choose a plan</span>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+            <button type="button" class="plan-btn" data-i="0" style="text-align:left;cursor:pointer;background:#FBF9F5;border:1.5px solid #E4DDD0;border-radius:12px;padding:11px 12px;transition:all .2s ease;"><div class="pb-name" style="font-family:'Oswald';font-weight:600;font-size:14px;text-transform:uppercase;color:#1F1E1D;line-height:1;">Solo</div><div class="pb-price" style="font-size:12.5px;font-weight:700;color:#8A8580;margin-top:5px;">$399</div></button>
+            <button type="button" class="plan-btn" data-i="1" style="text-align:left;cursor:pointer;background:#FBF9F5;border:1.5px solid #E4DDD0;border-radius:12px;padding:11px 12px;transition:all .2s ease;"><div class="pb-name" style="font-family:'Oswald';font-weight:600;font-size:14px;text-transform:uppercase;color:#1F1E1D;line-height:1;">Team</div><div class="pb-price" style="font-size:12.5px;font-weight:700;color:#8A8580;margin-top:5px;">$699</div></button>
+            <button type="button" class="plan-btn" data-i="2" style="text-align:left;cursor:pointer;background:#FBF9F5;border:1.5px solid #E4DDD0;border-radius:12px;padding:11px 12px;transition:all .2s ease;"><div class="pb-name" style="font-family:'Oswald';font-weight:600;font-size:14px;text-transform:uppercase;color:#1F1E1D;line-height:1;">Fleet</div><div class="pb-price" style="font-size:12.5px;font-weight:700;color:#8A8580;margin-top:5px;">$999</div></button>
+          </div>
+        </div>
+        <button type="submit" class="btn-primary" style="width:100%;margin-top:4px;">Start 7-day free trial &rarr;</button>
+        <div style="display:flex;gap:9px;align-items:flex-start;background:#FBF9F5;border:1px solid #EEE8DD;border-radius:12px;padding:12px 14px;margin-top:2px;"><span style="color:#B87333;font-size:14px;line-height:1.4;">&#9432;</span><span style="font-size:12.5px;line-height:1.5;color:#7A746B;">Card required. A one-time setup fee ($1,000&ndash;$2,000) is charged today; your monthly fee is waived for the trial week.</span></div>
+      </div>
+    </form>
+
+    <form data-reveal onsubmit="return false" style="background:#1F1E1D;border:1px solid #1F1E1D;border-radius:24px;padding:clamp(26px,3vw,40px);color:#fff;box-shadow:0 34px 64px -38px rgba(31,30,29,.6);">
+      <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(184,115,51,.2);border:1px solid rgba(184,115,51,.4);padding:6px 13px;border-radius:999px;margin-bottom:18px;"><span style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#e0a165;">We'll help</span></div>
+      <h2 style="font-weight:600;font-size:clamp(1.7rem,2.6vw,2.3rem);text-transform:uppercase;letter-spacing:-.01em;margin:0 0 8px;color:#fff;">Book a demo</h2>
+      <p id="tradeLine" style="font-size:15.5px;line-height:1.55;color:#A8A29A;margin:0 0 22px;">A 20-minute walkthrough tailored to your trade &mdash; we'll set up your rate card together.</p>
+      <span style="display:block;font-size:12.5px;font-weight:600;color:#CFC9BF;margin-bottom:8px;">Your trade</span>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:22px;">
+            <button type="button" class="trade-btn" data-name="Plumbing" style="cursor:pointer;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.16);border-radius:11px;padding:10px 8px;font-family:'Inter';font-size:12.5px;font-weight:600;color:#CFC9BF;transition:all .2s ease;">Plumbing</button>
+            <button type="button" class="trade-btn" data-name="Electrical" style="cursor:pointer;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.16);border-radius:11px;padding:10px 8px;font-family:'Inter';font-size:12.5px;font-weight:600;color:#CFC9BF;transition:all .2s ease;">Electrical</button>
+            <button type="button" class="trade-btn" data-name="HVAC" style="cursor:pointer;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.16);border-radius:11px;padding:10px 8px;font-family:'Inter';font-size:12.5px;font-weight:600;color:#CFC9BF;transition:all .2s ease;">HVAC</button>
+            <button type="button" class="trade-btn" data-name="Roofing" style="cursor:pointer;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.16);border-radius:11px;padding:10px 8px;font-family:'Inter';font-size:12.5px;font-weight:600;color:#CFC9BF;transition:all .2s ease;">Roofing</button>
+            <button type="button" class="trade-btn" data-name="Landscaping" style="cursor:pointer;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.16);border-radius:11px;padding:10px 8px;font-family:'Inter';font-size:12.5px;font-weight:600;color:#CFC9BF;transition:all .2s ease;">Landscaping</button>
+            <button type="button" class="trade-btn" data-name="Other" style="cursor:pointer;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.16);border-radius:11px;padding:10px 8px;font-family:'Inter';font-size:12.5px;font-weight:600;color:#CFC9BF;transition:all .2s ease;">Other</button>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"><span style="font-size:12.5px;font-weight:600;color:#CFC9BF;">Pick a day</span><span id="monthLabel" style="font-family:'Oswald';font-weight:500;font-size:15px;letter-spacing:.01em;color:#fff;"></span></div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:6px;"><div style="text-align:center;font-size:10.5px;font-weight:700;letter-spacing:.02em;color:#7C766D;">S</div><div style="text-align:center;font-size:10.5px;font-weight:700;letter-spacing:.02em;color:#7C766D;">M</div><div style="text-align:center;font-size:10.5px;font-weight:700;letter-spacing:.02em;color:#7C766D;">T</div><div style="text-align:center;font-size:10.5px;font-weight:700;letter-spacing:.02em;color:#7C766D;">W</div><div style="text-align:center;font-size:10.5px;font-weight:700;letter-spacing:.02em;color:#7C766D;">T</div><div style="text-align:center;font-size:10.5px;font-weight:700;letter-spacing:.02em;color:#7C766D;">F</div><div style="text-align:center;font-size:10.5px;font-weight:700;letter-spacing:.02em;color:#7C766D;">S</div></div>
+      <div id="cal" style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:22px;"></div>
+      <span style="display:block;font-size:12.5px;font-weight:600;color:#CFC9BF;margin-bottom:8px;">Time</span>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:22px;">
+            <button type="button" class="slot-btn" data-time="8:30 AM" style="cursor:pointer;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.16);border-radius:11px;padding:10px 6px;font-family:'Inter';font-size:12.5px;font-weight:600;color:#CFC9BF;transition:all .2s ease;">8:30 AM</button>
+            <button type="button" class="slot-btn" data-time="9:00 AM" style="cursor:pointer;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.16);border-radius:11px;padding:10px 6px;font-family:'Inter';font-size:12.5px;font-weight:600;color:#CFC9BF;transition:all .2s ease;">9:00 AM</button>
+            <button type="button" class="slot-btn" data-time="10:00 AM" style="cursor:pointer;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.16);border-radius:11px;padding:10px 6px;font-family:'Inter';font-size:12.5px;font-weight:600;color:#CFC9BF;transition:all .2s ease;">10:00 AM</button>
+            <button type="button" class="slot-btn" data-time="11:00 AM" style="cursor:pointer;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.16);border-radius:11px;padding:10px 6px;font-family:'Inter';font-size:12.5px;font-weight:600;color:#CFC9BF;transition:all .2s ease;">11:00 AM</button>
+            <button type="button" class="slot-btn" data-time="1:00 PM" style="cursor:pointer;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.16);border-radius:11px;padding:10px 6px;font-family:'Inter';font-size:12.5px;font-weight:600;color:#CFC9BF;transition:all .2s ease;">1:00 PM</button>
+            <button type="button" class="slot-btn" data-time="1:30 PM" style="cursor:pointer;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.16);border-radius:11px;padding:10px 6px;font-family:'Inter';font-size:12.5px;font-weight:600;color:#CFC9BF;transition:all .2s ease;">1:30 PM</button>
+            <button type="button" class="slot-btn" data-time="2:30 PM" style="cursor:pointer;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.16);border-radius:11px;padding:10px 6px;font-family:'Inter';font-size:12.5px;font-weight:600;color:#CFC9BF;transition:all .2s ease;">2:30 PM</button>
+            <button type="button" class="slot-btn" data-time="3:30 PM" style="cursor:pointer;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.16);border-radius:11px;padding:10px 6px;font-family:'Inter';font-size:12.5px;font-weight:600;color:#CFC9BF;transition:all .2s ease;">3:30 PM</button>
+            <button type="button" class="slot-btn" data-time="4:30 PM" style="cursor:pointer;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.16);border-radius:11px;padding:10px 6px;font-family:'Inter';font-size:12.5px;font-weight:600;color:#CFC9BF;transition:all .2s ease;">4:30 PM</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;">
+        <div><label class="fldlabel" for="d-name" style="color:#CFC9BF;">Your name</label><input id="d-name" type="text" class="fld" style="color:#fff;background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.16);" placeholder="Sam Rivera"></div>
+        <div><label class="fldlabel" for="d-phone" style="color:#CFC9BF;">Phone</label><input id="d-phone" type="tel" class="fld" style="color:#fff;background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.16);" placeholder="(555) 000-0000"></div>
+      </div>
+      <button type="submit" class="btn-primary" style="width:100%;">Book my demo</button>
+      <p style="font-size:12.5px;line-height:1.5;color:#8A8580;margin:14px 0 0;text-align:center;">No card needed. A specialist will confirm by text and email.</p>
+    </form>
+  </div>
+</section>
+<section style="max-width:1120px;margin:0 auto;padding:20px 32px 90px;">
+  <div data-reveal style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:16px;">
+    <div style="background:#FBF9F5;border:1px solid #EEE8DD;border-radius:16px;padding:22px;"><div style="font-family:'Oswald';font-weight:600;font-size:22px;color:#B87333;text-transform:uppercase;margin-bottom:8px;">Keep your number</div><p style="font-size:14.5px;line-height:1.55;color:#6B665F;margin:0;">We forward your existing business line &mdash; same number, same brand.</p></div>
+    <div style="background:#FBF9F5;border:1px solid #EEE8DD;border-radius:16px;padding:22px;"><div style="font-family:'Oswald';font-weight:600;font-size:22px;color:#B87333;text-transform:uppercase;margin-bottom:8px;">Live in a day</div><p style="font-size:14.5px;line-height:1.55;color:#6B665F;margin:0;">Most shops are answering with Sable the same afternoon they sign up.</p></div>
+    <div style="background:#FBF9F5;border:1px solid #EEE8DD;border-radius:16px;padding:22px;"><div style="font-family:'Oswald';font-weight:600;font-size:22px;color:#B87333;text-transform:uppercase;margin-bottom:8px;">Cancel anytime</div><p style="font-size:14.5px;line-height:1.55;color:#6B665F;margin:0;">Leave during the trial and you owe only the one-time setup fee.</p></div>
+  </div>
+</section>
+
+<footer style="border-top:1px solid #E1DACE;">
+  <div class="wrap" style="padding:34px 32px;display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:center;">
+    <a href="home.html" style="display:flex;align-items:center;gap:11px;"><div style="width:30px;height:30px;background:#B87333;border-radius:8px;display:flex;align-items:center;justify-content:center;"><span style="font-family:'Oswald';font-weight:700;font-size:17px;color:#fff;">S</span></div><span style="font-family:'Oswald';font-weight:600;font-size:21px;color:#1F1E1D;">Sable</span></a>
+    <div style="display:flex;gap:22px;flex-wrap:wrap;align-items:center;">
+      <a href="about.html" class="nav-link">About</a>
+      <a href="blog.html" class="nav-link">Blog</a>
+      <a href="integrations.html" class="nav-link">Integrations</a>
+      <a href="changelog.html" class="nav-link">Changelog</a>
+      <a href="contact.html" class="nav-link">Contact</a>
+      <a href="sable-privacy.html" class="nav-link">Privacy</a>
+      <a href="sable-terms.html" class="nav-link">Terms</a>
+    </div>
+    <span style="font-size:13.5px;color:#8A8580;">&copy; <span class="yr">2026</span> Sable, Inc. All rights reserved.</span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var reduce=false; try{reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){}
+  document.querySelectorAll('.yr').forEach(function(el){el.textContent=new Date().getFullYear();});
+  var items=[];
+  document.querySelectorAll('[data-reveal]').forEach(function(el){items.push({el:el,delay:0});});
+  document.querySelectorAll('[data-stagger]').forEach(function(par){Array.prototype.forEach.call(par.children,function(c,i){items.push({el:c,delay:i*90});});});
+  if(!reduce&&'IntersectionObserver'in window){
+    var ease='cubic-bezier(.22,1,.36,1)';
+    items.forEach(function(it){it.el.style.opacity='0';it.el.style.transform='translateY(28px)';it.el.style.transition='opacity .7s '+ease+' '+it.delay+'ms, transform .7s '+ease+' '+it.delay+'ms';it.el.style.willChange='opacity, transform';});
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.style.opacity='1';e.target.style.transform='none';io.unobserve(e.target);}});},{threshold:0.12,rootMargin:'0px 0px -6% 0px'});
+    items.forEach(function(it){io.observe(it.el);});
+  }
+  // Get-started: plan selector, trade picker, calendar, time slots
+  (function(){
+    var planBtns=document.querySelectorAll('.plan-btn');
+    function selPlan(i){planBtns.forEach(function(b){var on=+b.dataset.i===i;b.style.background=on?'#F6ECE0':'#FBF9F5';b.style.borderColor=on?'#B87333':'#E4DDD0';b.querySelector('.pb-name').style.color=on?'#9a5f28':'#1F1E1D';b.querySelector('.pb-price').style.color=on?'#B87333':'#8A8580';});}
+    planBtns.forEach(function(b){b.addEventListener('click',function(){selPlan(+b.dataset.i);});});
+    if(planBtns.length) selPlan(1);
+
+    var trade=null,day=null,slot=null;
+    var tradeBtns=document.querySelectorAll('.trade-btn');
+    var slotBtns=document.querySelectorAll('.slot-btn');
+    var tradeLine=document.getElementById('tradeLine');
+    function refreshLine(){
+      var parts=[]; if(trade)parts.push(trade); if(day)parts.push(day); if(slot)parts.push(slot);
+      tradeLine.textContent = parts.length ? ('Walkthrough for '+parts.join(' · ')+'.') : "A 20-minute walkthrough tailored to your trade — we'll set up your rate card together.";
+    }
+    tradeBtns.forEach(function(b){b.addEventListener('click',function(){trade=b.dataset.name;tradeBtns.forEach(function(x){var on=x===b;x.style.background=on?'#B87333':'rgba(255,255,255,.06)';x.style.borderColor=on?'#B87333':'rgba(255,255,255,.16)';x.style.color=on?'#fff':'#CFC9BF';});refreshLine();});});
+    slotBtns.forEach(function(b){b.addEventListener('click',function(){slot=b.dataset.time;slotBtns.forEach(function(x){var on=x===b;x.style.background=on?'#B87333':'rgba(255,255,255,.06)';x.style.borderColor=on?'#B87333':'rgba(255,255,255,.16)';x.style.color=on?'#fff':'#CFC9BF';});refreshLine();});});
+
+    var MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
+    var now=new Date(),y=now.getFullYear(),m=now.getMonth(),todayD=now.getDate();
+    var ml=document.getElementById('monthLabel'); if(ml) ml.textContent=MONTHS[m]+' '+y;
+    var cal=document.getElementById('cal');
+    if(cal){
+      var startDow=new Date(y,m,1).getDay(), daysIn=new Date(y,m+1,0).getDate();
+      for(var i=0;i<startDow;i++){var e=document.createElement('div');cal.appendChild(e);}
+      for(var d=1;d<=daysIn;d++){
+        (function(d){
+          var dow=new Date(y,m,d).getDay();
+          var disabled=(dow===0||dow===6||d<todayD);
+          var c=document.createElement('div');
+          c.textContent=d;
+          c.style.cssText='height:34px;display:flex;align-items:center;justify-content:center;border-radius:9px;font-size:13px;font-weight:600;transition:background .15s ease,color .15s ease;background:'+(disabled?'transparent':'rgba(255,255,255,.06)')+';color:'+(disabled?'#524D46':'#EDE9E2')+';cursor:'+(disabled?'default':'pointer')+';';
+          if(!disabled){c.addEventListener('click',function(){
+            day=MONTHS[m].slice(0,3)+' '+d;
+            Array.prototype.forEach.call(cal.children,function(x){if(x.textContent){/* reset only real days */} });
+            Array.prototype.forEach.call(cal.querySelectorAll('div'),function(){});
+            // reset backgrounds
+            Array.prototype.forEach.call(cal.children,function(x){ if(x.dataset && x.dataset.day){ x.style.background='rgba(255,255,255,.06)';x.style.color='#EDE9E2'; } });
+            c.style.background='#B87333';c.style.color='#fff';
+            refreshLine();
+          });c.dataset.day=d;}
+          cal.appendChild(c);
+        })(d);
+      }
+    }
+  })();
+})();
+</script>
+</body>
+</html>

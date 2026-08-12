@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { Clock, CheckCircle2, Clock3, Navigation, Play, MapPin, ChevronRight, X, Phone, Users, DollarSign, History, Image as ImageIcon, Plus, Trash2 } from 'lucide-react'
 import { listJobsForTechToday, advanceJobStatus, updateJobNotes, getLastVisit } from '../lib/jobs'
+import { useEscapeToClose } from './useEscapeToClose'
 import { listPhotosForJob, uploadJobPhoto, deleteJobPhoto } from '../lib/documents'
 import { getOpenTimeEntry, clockIn, clockOut } from '../lib/timeEntries'
+import { useLocationSharing } from '../lib/techLocation'
+import { MapPin as MapPinIcon } from 'lucide-react'
 import { LIGHT } from '../theme'
 import { SectionLabel, Badge, LoadingState, ErrorState, ErrorBanner, EmptyState, money, URGENCY_STYLE } from './ui'
 import { FieldLabel, ErrorText } from '../auth/ui'
@@ -17,7 +20,7 @@ function todayISO() {
 // the "on the way" SMS preview (no real SMS backend, that's now the
 // server-side jobs_started_send_on_the_way trigger instead) are both
 // dropped - Mark Complete now just saves the tech's notes to jobs.notes.
-export default function TechHome({ techId }) {
+export default function TechHome({ techId, company }) {
   const [jobs, setJobs] = useState([])
   const [openEntry, setOpenEntry] = useState(null)
   const [detailFor, setDetailFor] = useState(null)
@@ -73,10 +76,52 @@ export default function TechHome({ techId }) {
   const completedToday = jobs.filter((j) => j.status === 'done').length
   const remaining = jobs.filter((j) => j.status !== 'done').length
 
+  // Live location sharing runs only while a job is actually in progress. The
+  // hook handles the geolocation polling, foreground-only gating, and pin
+  // cleanup; here we just reflect its state to the tech.
+  const activeJob = jobs.find((j) => j.status === 'in_progress') || null
+  const loc = useLocationSharing({ techId, companyId: company?.id, activeJob })
+
   return (
     <>
       <ErrorBanner message={error && hasLoadedOnce ? error : ''} onRetry={reload} />
       <ErrorBanner message={actionError} onDismiss={() => setActionError('')} />
+
+      {activeJob && (
+        <div style={{ borderRadius: 14, padding: '11px 14px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 11, background: loc.status === 'denied' || loc.status === 'error' || loc.status === 'unavailable' ? LIGHT.alertSoft : LIGHT.successSoft, border: `1px solid ${loc.status === 'denied' || loc.status === 'error' || loc.status === 'unavailable' ? LIGHT.alert : LIGHT.success}` }}>
+          <span
+            className={loc.sharing ? 'pulse-loc' : ''}
+            style={{ width: 30, height: 30, borderRadius: 9, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: loc.status === 'denied' || loc.status === 'error' || loc.status === 'unavailable' ? LIGHT.alert : LIGHT.success }}
+          >
+            <MapPinIcon size={15} color="#fff" />
+          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {loc.sharing && (
+              <>
+                <div style={{ fontSize: 13, fontWeight: 700, color: LIGHT.ink }}>Sharing your location with dispatch</div>
+                <div style={{ fontSize: 11.5, color: LIGHT.sub }}>
+                  While “{activeJob.job_types?.label || activeJob.customers?.name || 'this job'}” is in progress. Stops when you finish it or close the app.
+                </div>
+              </>
+            )}
+            {loc.status === 'denied' && (
+              <>
+                <div style={{ fontSize: 13, fontWeight: 700, color: LIGHT.ink }}>Location is off</div>
+                <div style={{ fontSize: 11.5, color: LIGHT.sub }}>{loc.error}</div>
+              </>
+            )}
+            {(loc.status === 'error' || loc.status === 'unavailable') && (
+              <>
+                <div style={{ fontSize: 13, fontWeight: 700, color: LIGHT.ink }}>Location trouble</div>
+                <div style={{ fontSize: 11.5, color: LIGHT.sub }}>{loc.error}</div>
+              </>
+            )}
+            {loc.status === 'idle' && (
+              <div style={{ fontSize: 12.5, color: LIGHT.sub }}>Getting your first location fix…</div>
+            )}
+          </div>
+        </div>
+      )}
 
       <div style={{ background: LIGHT.card, borderRadius: 16, padding: 14, boxShadow: '0 1px 2px rgba(0,0,0,0.04)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
         <div style={{ width: 36, height: 36, borderRadius: 10, background: openEntry ? LIGHT.successSoft : LIGHT.border, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -164,6 +209,7 @@ function DetailRow({ icon: Icon, label, value }) {
 }
 
 function JobDetailModal({ job, onClose, onSaveNotes }) {
+  useEscapeToClose(onClose)
   const [notes, setNotes] = useState(job.notes || '')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -206,7 +252,7 @@ function JobDetailModal({ job, onClose, onSaveNotes }) {
             <Badge bg={u.bg} fg={u.fg}>{u.label}</Badge>
             <div style={{ fontSize: 19, fontWeight: 700, color: LIGHT.ink, marginTop: 8 }}>{job.description}</div>
           </div>
-          <button className="tap" onClick={onClose}><X size={20} color={LIGHT.sub} /></button>
+          <button type="button" className="tap" onClick={onClose} aria-label="Close"><X size={20} color={LIGHT.sub} aria-hidden="true" /></button>
         </div>
         <div style={{ fontSize: 13, color: LIGHT.sub, marginBottom: 18 }}>{job.scheduled_window} · {job.scheduled_date}</div>
 
@@ -229,8 +275,9 @@ function JobDetailModal({ job, onClose, onSaveNotes }) {
           </a>
         </div>
 
-        <FieldLabel>Job Notes</FieldLabel>
+        <FieldLabel htmlFor="field-job-notes">Job Notes</FieldLabel>
         <textarea
+          id="field-job-notes"
           value={notes} onChange={(e) => setNotes(e.target.value)}
           placeholder="Anything worth remembering about this job or customer, gate code, dog in the yard, parts needed next time..."
           rows={4}
@@ -350,6 +397,7 @@ function JobPhotosSection({ job }) {
 }
 
 function CompleteJobModal({ job, onClose, onComplete }) {
+  useEscapeToClose(onClose)
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')

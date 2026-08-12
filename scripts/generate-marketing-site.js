@@ -2,7 +2,7 @@
 // Regenerates marketing-site.html for one specific company: fills in the
 // {{TOKEN}} placeholders in the template with that company's real name,
 // service area, trade-appropriate copy, and active service catalog -
-// instead of the site being hardcoded to Mayfield Plumbing & Drain. Same
+// instead of the site being hardcoded to Sable Plumbing & Drain. Same
 // per-client resale model as receptionist-server/generate-assistant.js:
 // one deployed marketing site = one company, regenerate + redeploy when
 // the catalog or copy needs change.

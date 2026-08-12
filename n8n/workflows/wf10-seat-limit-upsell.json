@@ -1,0 +1,518 @@
+{
+  "name": "WF10: Seat-Limit Upsell Nudge",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "seat-change",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "81fb7530-950d-4f45-89a1-8ef4b8f42ad3",
+      "name": "Seat Change Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        288
+      ],
+      "webhookId": "318000ea-8616-4059-b994-1a053654faa9"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b1",
+              "name": "company_id",
+              "type": "string",
+              "value": "={{ $json.body.company_id }}"
+            },
+            {
+              "id": "b2",
+              "name": "technician_count",
+              "type": "number",
+              "value": "={{ $json.body.technician_count }}"
+            },
+            {
+              "id": "b3",
+              "name": "event",
+              "type": "string",
+              "value": "={{ $json.body.event }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f3ff863b-9332-4970-959b-6431698bae4a",
+      "name": "Extract Body",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        224,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.event }}",
+              "rightValue": "member_joined",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c396ee64-1695-4fa5-9e85-296ef3d1175b",
+      "name": "Is member_joined?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        448,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "companies_with_billing",
+        "returnAll": true,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.company_id }}"
+            }
+          ]
+        }
+      },
+      "id": "b748843d-d20a-4759-9845-62a0093b441c",
+      "name": "Get Company",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        672,
+        192
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c2",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "59fb2eee-10a0-4f68-88b9-ddbb6c20f9a5",
+      "name": "Company Found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        896,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const company = $input.first().json;\nconst body = $('Extract Body').first().json;\n\nconst plan = (company.plan || '').toLowerCase();\nconst techCount = parseInt(body.technician_count, 10) || 0;\n\nvar seat_limit = 0;\nif (plan === 'starter') { seat_limit = 1; }\nelse if (plan === 'growth') { seat_limit = 5; }\nelse if (plan === 'pro') { seat_limit = 999; }\nelse { seat_limit = 0; }\n\nif (plan === 'pro' || seat_limit === 0 || seat_limit === 999) {\n  return [{ json: { should_nudge: false, reason: 'fleet_or_unknown_plan' } }];\n}\n\nconst threshold = seat_limit - 1;\n\nif (techCount !== threshold) {\n  return [{ json: { should_nudge: false, reason: 'count_not_at_threshold' } }];\n}\n\nconst plan_key = plan + '_' + threshold;\nconst existingNudges = company.seat_nudge_sent || {};\nif (existingNudges[plan_key] === true) {\n  return [{ json: { should_nudge: false, reason: 'already_sent' } }];\n}\n\nreturn [{ json: {\n  should_nudge: true,\n  reason: 'eligible',\n  company_id: company.id,\n  company_name: company.name,\n  owner_email: company.contact_email,\n  plan: plan,\n  plan_key: plan_key,\n  seat_limit: seat_limit,\n  threshold: threshold,\n  technician_count: techCount,\n  existing_nudges: existingNudges,\n}}];"
+      },
+      "id": "da8eb177-3ef6-4978-878d-7fce6c4120c7",
+      "name": "Evaluate Nudge",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c3",
+              "leftValue": "={{ $json.should_nudge }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "416afa23-07af-4e99-b60d-9b470c00f379",
+      "name": "Should Nudge?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1344,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst planLabel = ({ starter: 'Solo', growth: 'Team', pro: 'Fleet' })[item.plan] || item.plan;\nconst LF = String.fromCharCode(10);\n\nconst subject = \"You're almost at your \" + planLabel + \" plan limit\";\nconst body = \"Hi \" + item.company_name + \",\" + LF + LF +\n  \"Your team now has \" + item.technician_count + \" technicians \\u2014 just 1 away from your \" +\n  planLabel + \" plan's \" + item.seat_limit + \"-seat limit.\" + LF + LF +\n  \"Upgrading to Fleet unlocks unlimited seats, plus:\" + LF +\n  \"  \\u2022 Advanced reporting & analytics\" + LF +\n  \"  \\u2022 Priority support\" + LF +\n  \"  \\u2022 Multi-location management\" + LF + LF +\n  \"Upgrade now before you hit the wall:\" + LF +\n  \"https://app.example.com/plan?upgrade=true\";\n\nconst nudge_json = JSON.stringify(Object.assign({}, item.existing_nudges, {\n  [item.plan_key]: true,\n  sent_at: new Date().toISOString(),\n}));\n\nreturn [{ json: {\n  company_id: item.company_id,\n  owner_email: item.owner_email,\n  company_name: item.company_name,\n  plan: item.plan,\n  plan_key: item.plan_key,\n  seat_limit: item.seat_limit,\n  threshold: item.threshold,\n  email_subject: subject,\n  email_body: body,\n  nudge_json: nudge_json,\n}}];"
+      },
+      "id": "b4009aa1-6c95-4774-b69a-4a8c93150d83",
+      "name": "Build Upsell Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1568,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "from",
+              "value": "<__PLACEHOLDER_VALUE__Your Platform Name__> <__PLACEHOLDER_VALUE__Resend From header, e.g. Sable <alerts@runsable.com>__>"
+            },
+            {
+              "name": "to",
+              "value": "={{ $json.owner_email }}"
+            },
+            {
+              "name": "subject",
+              "value": "={{ $json.email_subject }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.email_body }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "4a83e3e9-ced2-46b8-9c79-cbd7470adb1d",
+      "name": "Send Upsell Email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1792,
+        0
+      ],
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "Resend"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "companies",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Build Upsell Email').item.json.company_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "seat_nudge_sent",
+              "fieldValue": "={{ $('Build Upsell Email').item.json.nudge_json }}"
+            }
+          ]
+        }
+      },
+      "id": "8ee09656-a96f-49e2-851b-d27ed77edff4",
+      "name": "Update Nudge Log",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2016,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": {
+          "status": "ok",
+          "action": "nudge_sent"
+        },
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "ae225dc8-135c-4d8e-9422-445693419aa8",
+      "name": "Respond 200 (Success)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        2240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": {
+          "status": "ok",
+          "action": "no_nudge_needed"
+        },
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "cefe5001-7692-466e-906c-7802a21d571d",
+      "name": "Respond 200 (No Nudge)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1568,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": {
+          "status": "ok",
+          "action": "company_not_found"
+        },
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "0acdf1b4-eeae-47f1-a007-4d839c666dc3",
+      "name": "Respond 200 (No Company)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1120,
+        288
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": {
+          "status": "ok",
+          "action": "ignored"
+        },
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "2708ae90-de0c-4f58-ac8f-3e7186204577",
+      "name": "Respond 200 (Not member_joined)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        672,
+        384
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Seat Change Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract Body",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Body": {
+      "main": [
+        [
+          {
+            "node": "Is member_joined?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is member_joined?": {
+      "main": [
+        [
+          {
+            "node": "Get Company",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond 200 (Not member_joined)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Company": {
+      "main": [
+        [
+          {
+            "node": "Company Found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Company Found?": {
+      "main": [
+        [
+          {
+            "node": "Evaluate Nudge",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond 200 (No Company)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluate Nudge": {
+      "main": [
+        [
+          {
+            "node": "Should Nudge?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Should Nudge?": {
+      "main": [
+        [
+          {
+            "node": "Build Upsell Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond 200 (No Nudge)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Upsell Email": {
+      "main": [
+        [
+          {
+            "node": "Send Upsell Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Upsell Email": {
+      "main": [
+        [
+          {
+            "node": "Update Nudge Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Nudge Log": {
+      "main": [
+        [
+          {
+            "node": "Respond 200 (Success)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "f9fef60b-1130-4371-8510-b490f794afa8",
+  "meta": {
+    "instanceId": "1f898378341ccb341e91602af9fe7508a6860290fcee6f09244305e2b8d071a0"
+  },
+  "nodeGroups": [],
+  "id": "JbZHdXS5vVfqIoOc",
+  "tags": []
+}

@@ -20,8 +20,9 @@ export default function OwnerOnboardingScreen({ plan, onBack, onDone }) {
   function submit() {
     run(async () => {
       await createCompanyAndOwner({ businessName, ownerName, trade, teamSize, serviceArea, plan, googleReviewLink })
-      // Starter is free - no Stripe involved, straight into the dashboard.
-      // A paid plan needs a real Checkout session; if that step itself
+      // All tiers are paid (Solo/Team/Fleet, migration 069) and route
+      // through Stripe Checkout, which starts the 7-day free trial. If that
+      // step itself
       // fails (e.g. Stripe isn't configured yet), the workspace still
       // exists - land them in the dashboard anyway rather than stranding
       // them on this form, with a clear note about what didn't finish.
@@ -47,25 +48,25 @@ export default function OwnerOnboardingScreen({ plan, onBack, onDone }) {
       <div style={{ fontSize: 13.5, color: LIGHT.sub, marginBottom: 22 }}>This customizes your job types, pricing, and dashboard.</div>
 
       <div style={{ background: LIGHT.card, borderRadius: 20, padding: 22, boxShadow: '0 1px 2px rgba(0,0,0,0.04)', marginBottom: 4 }}>
-        <FieldLabel>Business name</FieldLabel>
-        <TextInput value={businessName} onChange={setBusinessName} placeholder="Mayfield Plumbing & Drain" />
-        <FieldLabel>Your name</FieldLabel>
-        <TextInput value={ownerName} onChange={setOwnerName} placeholder="Jordan Reyes" />
+        <FieldLabel htmlFor="field-business-name-2">Business name</FieldLabel>
+        <TextInput id="field-business-name-2" value={businessName} onChange={setBusinessName} placeholder="Sable Plumbing & Drain" />
+        <FieldLabel htmlFor="field-your-name-2">Your name</FieldLabel>
+        <TextInput id="field-your-name-2" value={ownerName} onChange={setOwnerName} placeholder="Jordan Reyes" />
 
         <FieldLabel>What's your trade?</FieldLabel>
-        <ChipRow options={['Plumbing', 'Electrical', 'HVAC', 'Roofing', 'Locksmith', 'Other']} value={trade} onChange={setTrade} />
+        <ChipRow groupLabel="What's your trade?" options={['Plumbing', 'Electrical', 'HVAC', 'Roofing', 'Locksmith', 'Other']} value={trade} onChange={setTrade} />
         <div style={{ fontSize: 11, color: LIGHT.sub, marginTop: -8, marginBottom: 14, lineHeight: 1.4 }}>
           Your service catalog and pricing pre-fill with defaults for your trade - edit them anytime from Settings.
         </div>
 
         <FieldLabel>Team size (including you)</FieldLabel>
-        <ChipRow options={['Just me', '2-5', '6-15', '15+']} value={teamSize} onChange={setTeamSize} />
+        <ChipRow groupLabel="Team size (including you)" options={['Just me', '2-5', '6-15', '15+']} value={teamSize} onChange={setTeamSize} />
 
-        <FieldLabel>Service area</FieldLabel>
-        <TextInput value={serviceArea} onChange={setServiceArea} placeholder="e.g. Calgary and surrounding areas" />
+        <FieldLabel htmlFor="field-service-area-1">Service area</FieldLabel>
+        <TextInput id="field-service-area-1" value={serviceArea} onChange={setServiceArea} placeholder="e.g. Calgary and surrounding areas" />
 
-        <FieldLabel>Google review link (optional)</FieldLabel>
-        <TextInput value={googleReviewLink} onChange={setGoogleReviewLink} placeholder="https://g.page/r/.../review" />
+        <FieldLabel htmlFor="field-google-review-link-optional-1">Google review link (optional)</FieldLabel>
+        <TextInput id="field-google-review-link-optional-1" value={googleReviewLink} onChange={setGoogleReviewLink} placeholder="https://g.page/r/.../review" />
         <div style={{ fontSize: 11, color: LIGHT.sub, marginTop: -8, marginBottom: 14, lineHeight: 1.4 }}>
           Used in your automated review-request texts. Find yours in Google
           Business Profile → "Ask for reviews." You can add this later too.

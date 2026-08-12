@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' fonts.googleapis.com; font-src fonts.gstatic.com; img-src 'self' data:; script-src 'self' 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'">
+<title>Features — Sable</title>
+<meta name="description" content="See exactly what Sable does: answering & quoting, dispatch, customer records, and the review bot.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#F4F0E9;--paper2:#FBF9F5;--ink:#1F1E1D;--ink2:#5A554D;--muted:#8A8580;--copper:#B87333;--copper-dk:#9a5f28;--copper-lt:#D18E4E;--line:#E7E0D4;--line2:#E1DACE;--navy:#0A1128;}
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;overflow-x:hidden;min-height:100vh;}
+  html{scroll-behavior:smooth;}
+  a{color:var(--copper);text-decoration:none;}
+  a:hover{color:var(--copper-dk);}
+  h1,h2,h3{font-family:'Oswald',sans-serif;}
+  a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--copper);outline-offset:3px;border-radius:6px;}
+  input::placeholder,textarea::placeholder{color:#9a938a;}
+  input:focus,textarea:focus{outline:none;border-color:var(--copper) !important;box-shadow:0 0 0 3px rgba(184,115,51,.14);}
+  .wrap{max-width:1240px;margin:0 auto;}
+  .nav-link{color:#4A463F;font-size:15px;font-weight:500;transition:color .2s ease;}
+  .nav-link:hover{color:var(--ink);}
+  .nav-link.active{color:var(--ink);font-weight:600;}
+  .nav-cta{background:var(--ink);color:#fff;font-size:14px;font-weight:600;padding:12px 22px;border-radius:999px;transition:transform .2s ease,background .2s ease,box-shadow .2s ease;}
+  .nav-cta:hover{background:#000;color:#fff;transform:translateY(-2px);box-shadow:0 10px 22px -10px rgba(31,30,29,.6);}
+  .card-hover{transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease;}
+  .card-hover:hover{transform:translateY(-3px);box-shadow:0 24px 48px -32px rgba(31,30,29,.4);border-color:#D9CFBD;}
+  .btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:10px;background:var(--copper);color:#fff;font-size:16px;font-weight:600;padding:16px 30px;border-radius:999px;box-shadow:0 12px 28px -10px rgba(184,115,51,.7);transition:transform .2s ease,background .2s ease,box-shadow .2s ease;cursor:pointer;border:none;font-family:'Inter';}
+  .btn-primary:hover{background:#c98240;color:#fff;transform:translateY(-2px);box-shadow:0 16px 32px -10px rgba(184,115,51,.8);}
+  .btn-light{display:inline-flex;align-items:center;justify-content:center;gap:10px;background:#fff;color:#1F1E1D;font-size:16px;font-weight:600;padding:16px 30px;border-radius:999px;transition:transform .2s ease,box-shadow .2s ease;}
+  .btn-light:hover{color:#1F1E1D;transform:translateY(-2px);box-shadow:0 14px 30px -12px rgba(0,0,0,.35);}
+  .btn-outline-w{display:inline-flex;align-items:center;justify-content:center;gap:10px;background:transparent;border:1.5px solid rgba(255,255,255,.6);color:#fff;font-size:16px;font-weight:600;padding:16px 28px;border-radius:999px;transition:transform .2s ease,background .2s ease,border-color .2s ease;}
+  .btn-outline-w:hover{color:#fff;border-color:#fff;background:rgba(255,255,255,.1);transform:translateY(-2px);}
+  .btn-outline{display:inline-flex;align-items:center;justify-content:center;gap:10px;background:#fff;border:1.5px solid #DED7CB;color:#1F1E1D;font-size:15px;font-weight:600;padding:14px 22px;border-radius:999px;transition:border-color .2s ease,transform .2s ease,box-shadow .2s ease;}
+  .btn-outline:hover{border-color:var(--copper);color:#1F1E1D;transform:translateY(-2px);box-shadow:0 12px 24px -16px rgba(31,30,29,.4);}
+  .fld{width:100%;font-family:'Inter';font-size:15px;color:#1F1E1D;background:#FBF9F5;border:1.5px solid #E4DDD0;border-radius:12px;padding:13px 15px;transition:border-color .2s ease,box-shadow .2s ease;}
+  .fldlabel{display:block;font-size:12.5px;font-weight:600;color:#4A463F;margin-bottom:6px;}
+  @media (max-width:680px){header.nav{padding:18px 20px !important;}nav.nav-links{gap:16px !important;row-gap:10px !important;flex-wrap:wrap;justify-content:flex-end;}}
+  @media (prefers-reduced-motion: reduce){html{scroll-behavior:auto;}[data-reveal],[data-stagger]>*{opacity:1 !important;transform:none !important;}}
+</style>
+</head>
+<body>
+
+<header class="nav wrap" style="padding:26px 32px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;">
+  <a href="home.html" style="display:flex;align-items:center;gap:11px;">
+    <div style="width:34px;height:34px;background:#B87333;border-radius:9px;display:flex;align-items:center;justify-content:center;"><span style="font-family:'Oswald';font-weight:700;font-size:20px;color:#fff;line-height:1;">S</span></div>
+    <span style="font-family:'Oswald';font-weight:600;font-size:24px;color:#1F1E1D;">Sable</span>
+  </a>
+  <nav class="nav-links" style="display:flex;align-items:center;gap:34px;flex-wrap:wrap;justify-content:flex-end;">
+    <a href="home.html" class="nav-link">Home</a>
+    <a href="features.html" class="nav-link active">Features</a>
+    <a href="pricing.html" class="nav-link">Pricing</a>
+    <a href="login.html" class="nav-link">Log In</a>
+    <a href="get-started.html" class="nav-cta">Get Started</a>
+  </nav>
+</header>
+
+<section class="wrap" style="padding:48px 32px 24px;text-align:center;">
+  <div data-reveal>
+    <div style="display:inline-flex;align-items:center;gap:9px;background:rgba(184,115,51,.1);border:1px solid rgba(184,115,51,.24);padding:7px 15px;border-radius:999px;margin-bottom:26px;">
+      <span style="width:7px;height:7px;border-radius:50%;background:#B87333;"></span>
+      <span style="font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#9a5f28;">How it works</span>
+    </div>
+    <h1 style="font-weight:700;font-size:clamp(2.6rem,6vw,4.8rem);line-height:.98;letter-spacing:-.02em;margin:0 auto 22px;text-transform:uppercase;max-width:18ch;text-wrap:balance;">See exactly what Sable does</h1>
+    <p style="font-size:20px;line-height:1.55;color:#5A554D;max-width:52ch;margin:0 auto;text-wrap:pretty;">No tech skills needed. Watch each part work, step by step &mdash; the same way it'll run for your business, day and night.</p>
+  </div>
+</section>
+
+<section class="wrap" style="padding:72px 32px;">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:56px;align-items:center;">
+    <div data-reveal>
+      <div style="font-family:'Oswald';font-weight:700;font-size:64px;line-height:1;color:#EADFCF;margin-bottom:4px;">01</div>
+      <div style="font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#B87333;margin-bottom:14px;">Answering &amp; quoting</div>
+      <h2 style="font-weight:600;font-size:clamp(2rem,3.6vw,3rem);line-height:1.04;letter-spacing:-.01em;text-transform:uppercase;margin:0 0 18px;text-wrap:balance;">It picks up and prices the job</h2>
+      <p style="font-size:18px;line-height:1.6;color:#5A554D;margin:0 0 28px;max-width:44ch;text-wrap:pretty;">When a call comes in &mdash; even at 2 a.m. &mdash; Sable answers in a friendly voice, understands the problem, and gives an accurate price on the spot.</p>
+      <div style="display:flex;flex-direction:column;gap:18px;">
+          <div style="display:flex;align-items:flex-start;gap:15px;"><span style="width:32px;height:32px;flex:0 0 32px;border-radius:50%;background:#B87333;color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Oswald';font-weight:600;font-size:15px;">1</span><span style="font-size:17px;line-height:1.5;color:#312F2B;padding-top:4px;">The phone rings and Sable answers on the first ring.</span></div>
+          <div style="display:flex;align-items:flex-start;gap:15px;"><span style="width:32px;height:32px;flex:0 0 32px;border-radius:50%;background:#B87333;color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Oswald';font-weight:600;font-size:15px;">2</span><span style="font-size:17px;line-height:1.5;color:#312F2B;padding-top:4px;">It quotes from your rate card and offers a time.</span></div>
+          <div style="display:flex;align-items:flex-start;gap:15px;"><span style="width:32px;height:32px;flex:0 0 32px;border-radius:50%;background:#B87333;color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Oswald';font-weight:600;font-size:15px;">3</span><span style="font-size:17px;line-height:1.5;color:#312F2B;padding-top:4px;">The job is booked before you'd have woken up.</span></div>
+      </div>
+    </div>
+    <div data-reveal style="min-width:0;"><div style="width:100%;background:#FFFFFF;border-radius:22px;box-shadow:0 40px 80px -32px rgba(31,30,29,.32);border:1px solid #ECE8E1;padding:26px;">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:22px;">
+    <div style="width:42px;height:42px;flex:0 0 42px;background:#0A1128;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px;">A</div>
+    <div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:16px;color:#1F1E1D;line-height:1.2;">Apex Plumbing</div><div style="font-size:12.5px;color:#8A8580;line-height:1.3;">Sable AI Receptionist</div></div>
+    <div style="display:flex;align-items:center;gap:7px;background:#F3F6F3;border:1px solid #DCEBDD;padding:5px 11px;border-radius:999px;"><span style="width:7px;height:7px;border-radius:50%;background:#2FA84F;"></span><span style="font-size:11px;font-weight:600;letter-spacing:.04em;color:#2FA84F;">LIVE</span></div>
+  </div>
+  <div style="background:#FCFBF8;border:1px solid #EEEAE3;border-radius:14px;padding:18px;">
+    <div style="font-size:11px;font-weight:700;letter-spacing:.08em;color:#B87333;margin-bottom:12px;">STEP 2 / 4 &middot; Quoting</div>
+    <div style="background:#F5F2EC;border-radius:10px;padding:10px 12px;margin-bottom:12px;"><div style="font-size:13px;font-weight:600;color:#1F1E1D;">Jordan M.</div><div style="font-size:12px;color:#8A8580;">+1 (403) 555-0192</div></div>
+    <div style="font-size:13.5px;color:#1F1E1D;line-height:1.5;margin-bottom:10px;">"My basement is flooding &mdash; water everywhere, I need someone now."</div>
+    <div style="background:#B87333;color:#fff;font-size:13px;line-height:1.45;padding:10px 12px;border-radius:14px 14px 14px 4px;width:fit-content;max-width:100%;">Flood inspection runs $150&ndash;$250, and I can have a tech out by 2 PM today. Want me to book it?</div>
+  </div>
+</div></div>
+  </div>
+</section>
+
+<section data-reveal style="background:#EAE3D8;">
+  <div class="wrap" style="padding:80px 32px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:56px;align-items:center;">
+    <div style="min-width:0;order:2;"><div style="position:relative;width:100%;height:470px;background:#F7F3EC;border:1px solid #E1D9CB;border-radius:20px;overflow:hidden;box-shadow:0 34px 70px -40px rgba(31,30,29,.5);">
+  <svg viewBox="0 0 400 470" preserveAspectRatio="xMidYMid slice" width="100%" height="100%" aria-hidden="true" style="position:absolute;inset:0;">
+    <rect width="400" height="470" fill="#F0EADF"></rect>
+    <g stroke="#E0D7C7" stroke-width="2"><path d="M0 90 H400 M0 200 H400 M0 320 H400 M0 420 H400"></path><path d="M70 0 V470 M180 0 V470 M280 0 V470"></path></g>
+    <path d="M70 200 H180 V90" stroke="#C9BDA6" stroke-width="6" fill="none" stroke-linecap="round"></path>
+    <path d="M180 320 H280 V420" stroke="#C9BDA6" stroke-width="6" fill="none" stroke-linecap="round"></path>
+    <path d="M70 200 L180 320" stroke="#B87333" stroke-width="3" stroke-dasharray="6 7" fill="none" opacity=".85"></path>
+  </svg>
+  <div style="position:absolute;left:44px;top:180px;width:32px;height:32px;border-radius:50% 50% 50% 2px;background:#B87333;box-shadow:0 8px 18px -6px rgba(184,115,51,.8);display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700;">M</div>
+  <div style="position:absolute;left:262px;top:300px;width:32px;height:32px;border-radius:50% 50% 50% 2px;background:#0A1128;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700;">D</div>
+  <div style="position:absolute;left:160px;top:70px;width:20px;height:20px;border-radius:50%;background:#fff;border:3px solid #B87333;"></div>
+  <div style="position:absolute;left:260px;top:404px;width:20px;height:20px;border-radius:50%;background:#fff;border:3px solid #0A1128;"></div>
+  <div style="position:absolute;left:16px;right:16px;bottom:16px;background:#fff;border:1px solid #ECE6DA;border-radius:14px;padding:14px 16px;box-shadow:0 16px 34px -22px rgba(31,30,29,.5);">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+      <div><div style="font-size:13.5px;font-weight:700;color:#1F1E1D;">Marcus R. &rarr; 48 Marigold Ln</div><div style="font-size:12px;color:#8A8580;margin-top:2px;">Water heater leak &middot; ETA 12 min</div></div>
+      <span style="font-size:11px;font-weight:700;color:#fff;background:#2FA84F;padding:5px 11px;border-radius:999px;white-space:nowrap;">On the way</span>
+    </div>
+  </div>
+</div></div>
+    <div style="order:1;">
+      <div style="font-family:'Oswald';font-weight:700;font-size:64px;line-height:1;color:#DBCEB8;margin-bottom:4px;">02</div>
+      <div style="font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#B87333;margin-bottom:14px;">Dispatch &amp; live map</div>
+      <h2 style="font-weight:600;font-size:clamp(2rem,3.6vw,3rem);line-height:1.04;letter-spacing:-.01em;text-transform:uppercase;margin:0 0 18px;text-wrap:balance;">It sends the right tech, live</h2>
+      <p style="font-size:18px;line-height:1.6;color:#5A554D;margin:0 0 28px;max-width:44ch;text-wrap:pretty;">Every booked job lands on one board. Tap a technician and the map takes over &mdash; you and the customer both see the truck on its way.</p>
+      <div style="display:flex;flex-direction:column;gap:18px;">
+          <div style="display:flex;align-items:flex-start;gap:15px;"><span style="width:32px;height:32px;flex:0 0 32px;border-radius:50%;background:#B87333;color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Oswald';font-weight:600;font-size:15px;">1</span><span style="font-size:17px;line-height:1.5;color:#312F2B;padding-top:4px;">The new job shows up, ready to assign.</span></div>
+          <div style="display:flex;align-items:flex-start;gap:15px;"><span style="width:32px;height:32px;flex:0 0 32px;border-radius:50%;background:#B87333;color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Oswald';font-weight:600;font-size:15px;">2</span><span style="font-size:17px;line-height:1.5;color:#312F2B;padding-top:4px;">Pick the closest available tech in one tap.</span></div>
+          <div style="display:flex;align-items:flex-start;gap:15px;"><span style="width:32px;height:32px;flex:0 0 32px;border-radius:50%;background:#B87333;color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Oswald';font-weight:600;font-size:15px;">3</span><span style="font-size:17px;line-height:1.5;color:#312F2B;padding-top:4px;">The customer gets an automatic “on the way” text.</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="wrap" style="padding:80px 32px;">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:56px;align-items:center;">
+    <div data-reveal>
+      <div style="font-family:'Oswald';font-weight:700;font-size:64px;line-height:1;color:#EADFCF;margin-bottom:4px;">03</div>
+      <div style="font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#B87333;margin-bottom:14px;">Customer records</div>
+      <h2 style="font-weight:600;font-size:clamp(2rem,3.6vw,3rem);line-height:1.04;letter-spacing:-.01em;text-transform:uppercase;margin:0 0 18px;text-wrap:balance;">It remembers every customer</h2>
+      <p style="font-size:18px;line-height:1.6;color:#5A554D;margin:0 0 28px;max-width:44ch;text-wrap:pretty;">Each call becomes a saved record &mdash; name, number, address, the quote, and every step after. Nothing gets lost on a sticky note again.</p>
+      <div style="display:flex;flex-direction:column;gap:18px;">
+          <div style="display:flex;align-items:flex-start;gap:15px;"><span style="width:32px;height:32px;flex:0 0 32px;border-radius:50%;background:#B87333;color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Oswald';font-weight:600;font-size:15px;">1</span><span style="font-size:17px;line-height:1.5;color:#312F2B;padding-top:4px;">The caller's details are filled in for you.</span></div>
+          <div style="display:flex;align-items:flex-start;gap:15px;"><span style="width:32px;height:32px;flex:0 0 32px;border-radius:50%;background:#B87333;color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Oswald';font-weight:600;font-size:15px;">2</span><span style="font-size:17px;line-height:1.5;color:#312F2B;padding-top:4px;">Quote, booking, and texts are logged automatically.</span></div>
+          <div style="display:flex;align-items:flex-start;gap:15px;"><span style="width:32px;height:32px;flex:0 0 32px;border-radius:50%;background:#B87333;color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Oswald';font-weight:600;font-size:15px;">3</span><span style="font-size:17px;line-height:1.5;color:#312F2B;padding-top:4px;">A review request goes out after the job is done.</span></div>
+      </div>
+    </div>
+    <div data-reveal style="min-width:0;"><div style="background:#fff;border:1px solid #ECE8E1;border-radius:20px;padding:28px;box-shadow:0 24px 50px -34px rgba(31,30,29,.4);">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">
+    <div style="width:44px;height:44px;flex:0 0 44px;border-radius:50%;background:#EDE5D8;display:flex;align-items:center;justify-content:center;font-family:'Oswald';font-weight:600;font-size:17px;color:#9a5f28;">JM</div>
+    <div style="flex:1;min-width:0;"><div style="font-size:15px;font-weight:700;color:#1F1E1D;">Jordan M.</div><div style="font-size:12.5px;color:#8A8580;">+1 (403) 555-0192</div></div>
+    <span style="font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#2FA84F;background:#EAF5EC;padding:5px 10px;border-radius:999px;">New lead</span>
+  </div>
+  <div style="display:grid;grid-template-columns:auto 1fr;gap:9px 16px;font-size:13px;line-height:1.4;padding-top:16px;border-top:1px solid #EEE8DD;">
+    <span style="color:#8A8580;">Issue</span><span style="color:#1F1E1D;font-weight:600;">Basement flood &middot; residential</span>
+    <span style="color:#8A8580;">Address</span><span style="color:#1F1E1D;font-weight:600;">48 Marigold Ln, Fairview</span>
+    <span style="color:#8A8580;">Quote</span><span style="color:#B87333;font-weight:700;">$150&ndash;$250</span>
+    <span style="color:#8A8580;">Booked</span><span style="color:#1F1E1D;font-weight:600;">Today &middot; 2:00 PM</span>
+    <span style="color:#8A8580;">Review</span><span style="color:#1F1E1D;font-weight:600;">Sent after job &check;</span>
+  </div>
+</div></div>
+  </div>
+</section>
+
+<section class="wrap" style="padding:80px 32px;">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:56px;align-items:center;">
+    <div data-reveal>
+      <div style="font-family:'Oswald';font-weight:700;font-size:64px;line-height:1;color:#EADFCF;margin-bottom:4px;">04</div>
+      <div style="font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#B87333;margin-bottom:14px;">Bonus &middot; Review bot</div>
+      <h2 style="font-weight:600;font-size:clamp(2rem,3.6vw,3rem);line-height:1.04;letter-spacing:-.01em;text-transform:uppercase;margin:0 0 18px;text-wrap:balance;">It wins the reviews that rank you first</h2>
+      <p style="font-size:18px;line-height:1.6;color:#5A554D;margin:0 0 28px;max-width:44ch;text-wrap:pretty;">Great work should show up when the next customer searches. Sable turns every finished job into a fresh 5-star review &mdash; automatically.</p>
+      <div style="display:flex;flex-direction:column;gap:18px;">
+          <div style="display:flex;align-items:flex-start;gap:15px;"><span style="width:32px;height:32px;flex:0 0 32px;border-radius:50%;background:#B87333;color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Oswald';font-weight:600;font-size:15px;">1</span><span style="font-size:17px;line-height:1.5;color:#312F2B;padding-top:4px;">When a job wraps up, the customer gets a one-tap review link by text.</span></div>
+          <div style="display:flex;align-items:flex-start;gap:15px;"><span style="width:32px;height:32px;flex:0 0 32px;border-radius:50%;background:#B87333;color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Oswald';font-weight:600;font-size:15px;">2</span><span style="font-size:17px;line-height:1.5;color:#312F2B;padding-top:4px;">Happy customers leave fresh reviews without you chasing them.</span></div>
+          <div style="display:flex;align-items:flex-start;gap:15px;"><span style="width:32px;height:32px;flex:0 0 32px;border-radius:50%;background:#B87333;color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Oswald';font-weight:600;font-size:15px;">3</span><span style="font-size:17px;line-height:1.5;color:#312F2B;padding-top:4px;">Your rating climbs above nearby shops in local search.</span></div>
+      </div>
+    </div>
+    <div data-reveal style="min-width:0;">
+      <div style="background:#fff;border:1px solid #ECE8E1;border-radius:20px;padding:32px;box-shadow:0 24px 50px -34px rgba(31,30,29,.4);">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#8A8580;margin-bottom:18px;">Local search ranking</div>
+        <div style="display:flex;flex-direction:column;gap:18px;">
+          <div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;"><span style="font-size:14px;font-weight:700;color:#1F1E1D;">Your shop</span><span style="font-size:14px;font-weight:700;color:#B87333;">4.9 &#9733; &middot; 128</span></div>
+            <div style="height:10px;border-radius:999px;background:#EFE9DE;overflow:hidden;"><div style="width:98%;height:100%;background:#B87333;border-radius:999px;"></div></div>
+          </div>
+          <div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;"><span style="font-size:14px;font-weight:600;color:#8A8580;">Nearest competitor</span><span style="font-size:14px;font-weight:600;color:#8A8580;">4.2 &#9733; &middot; 41</span></div>
+            <div style="height:10px;border-radius:999px;background:#EFE9DE;overflow:hidden;"><div style="width:72%;height:100%;background:#C9C2B6;border-radius:999px;"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="wrap" style="margin:24px auto 96px;padding:0 32px;">
+  <div data-reveal style="background:#B87333;border-radius:26px;padding:clamp(44px,5.5vw,76px);text-align:center;position:relative;overflow:hidden;">
+    <div style="position:relative;z-index:1;max-width:640px;margin:0 auto;">
+      <h2 style="font-weight:700;font-size:clamp(2.2rem,4.5vw,3.6rem);line-height:1;letter-spacing:-.01em;text-transform:uppercase;margin:0 0 20px;color:#fff;text-wrap:balance;">Want to see it on your own calls?</h2>
+      <p style="font-size:19px;line-height:1.55;color:rgba(255,255,255,.9);margin:0 0 34px;">Book a walkthrough and we'll set it up with you, or start your free trial and let Sable answer tonight.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:14px;justify-content:center;">
+        <a href="get-started.html" class="btn-light">Get started &rarr;</a>
+        <a href="voice-receptionist-demo.html" class="btn-outline-w">Try the live demo</a>
+      </div>
+    </div>
+    <div style="position:absolute;right:-80px;top:50%;transform:translateY(-50%);width:420px;height:420px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.14),transparent 70%);pointer-events:none;"></div>
+  </div>
+</section>
+
+<footer style="border-top:1px solid #E1DACE;">
+  <div class="wrap" style="padding:34px 32px;display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:center;">
+    <a href="home.html" style="display:flex;align-items:center;gap:11px;"><div style="width:30px;height:30px;background:#B87333;border-radius:8px;display:flex;align-items:center;justify-content:center;"><span style="font-family:'Oswald';font-weight:700;font-size:17px;color:#fff;">S</span></div><span style="font-family:'Oswald';font-weight:600;font-size:21px;color:#1F1E1D;">Sable</span></a>
+    <div style="display:flex;gap:22px;flex-wrap:wrap;align-items:center;">
+      <a href="about.html" class="nav-link">About</a>
+      <a href="blog.html" class="nav-link">Blog</a>
+      <a href="integrations.html" class="nav-link">Integrations</a>
+      <a href="changelog.html" class="nav-link">Changelog</a>
+      <a href="contact.html" class="nav-link">Contact</a>
+      <a href="sable-privacy.html" class="nav-link">Privacy</a>
+      <a href="sable-terms.html" class="nav-link">Terms</a>
+    </div>
+    <span style="font-size:13.5px;color:#8A8580;">&copy; <span class="yr">2026</span> Sable, Inc. All rights reserved.</span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var reduce=false; try{reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){}
+  document.querySelectorAll('.yr').forEach(function(el){el.textContent=new Date().getFullYear();});
+  var items=[];
+  document.querySelectorAll('[data-reveal]').forEach(function(el){items.push({el:el,delay:0});});
+  document.querySelectorAll('[data-stagger]').forEach(function(par){Array.prototype.forEach.call(par.children,function(c,i){items.push({el:c,delay:i*90});});});
+  if(!reduce&&'IntersectionObserver'in window){
+    var ease='cubic-bezier(.22,1,.36,1)';
+    items.forEach(function(it){it.el.style.opacity='0';it.el.style.transform='translateY(28px)';it.el.style.transition='opacity .7s '+ease+' '+it.delay+'ms, transform .7s '+ease+' '+it.delay+'ms';it.el.style.willChange='opacity, transform';});
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.style.opacity='1';e.target.style.transform='none';io.unobserve(e.target);}});},{threshold:0.12,rootMargin:'0px 0px -6% 0px'});
+    items.forEach(function(it){io.observe(it.el);});
+  }
+})();
+</script>
+</body>
+</html>

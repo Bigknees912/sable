@@ -241,6 +241,57 @@ async function applySmsConsent(supabase, companyId, customerId, smsConsent) {
   if (eventError) throw eventError;
 }
 
+// Fallback window if a company hasn't set companies.callback_window_days
+// (migration 067). 30 days covers "the fix didn't hold" for most trades
+// without also flagging an unrelated new job of the same type months later.
+const DEFAULT_CALLBACK_WINDOW_DAYS = 30;
+
+async function getCallbackWindowDays(supabase, companyId) {
+  try {
+    const { data } = await supabase.from("companies").select("callback_window_days").eq("id", companyId).maybeSingle();
+    const n = data?.callback_window_days;
+    return Number.isFinite(n) && n > 0 ? n : DEFAULT_CALLBACK_WINDOW_DAYS;
+  } catch {
+    return DEFAULT_CALLBACK_WINDOW_DAYS;
+  }
+}
+
+/**
+ * Looks for a recently completed job of the same type that this caller is
+ * likely calling back about - matched by the same customer (phone) OR the
+ * same service address, within the company's configured window. If found,
+ * this new booking is a possible warranty callback on that work, not a new
+ * charge. Never throws: a lookup failure here should just mean "treat as a
+ * normal new job," not break a live booking.
+ */
+async function findRecentCallbackSource(supabase, companyId, { customerId, jobTypeId, address, windowDays }) {
+  if (!jobTypeId) return null;
+  if (!customerId && !address) return null;
+  try {
+    const since = new Date(Date.now() - (windowDays || DEFAULT_CALLBACK_WINDOW_DAYS) * 24 * 60 * 60 * 1000).toISOString();
+    let query = supabase
+      .from("jobs")
+      .select("id, assigned_tech_id, customer_id, address")
+      .eq("company_id", companyId)
+      .eq("job_type_id", jobTypeId)
+      .eq("status", "done")
+      .gte("completed_at", since)
+      .order("completed_at", { ascending: false })
+      .limit(1);
+    // Match on the same customer (phone-resolved) or the same address -
+    // covers a returning caller who calls from a different number but the
+    // work is at the same place.
+    if (customerId && address) query = query.or(`customer_id.eq.${customerId},address.eq.${address}`);
+    else if (customerId) query = query.eq("customer_id", customerId);
+    else query = query.eq("address", address);
+    const { data } = await query.maybeSingle();
+    return data || null;
+  } catch (err) {
+    console.error("findRecentCallbackSource failed (non-fatal, treated as a new job):", err.message);
+    return null;
+  }
+}
+
 /**
  * Creates the real booking: finds/creates the customer, inserts the job,
  * and marks the call's outcome "booked". Returns { ok: false, reason } on
@@ -312,6 +363,13 @@ async function createBooking({ companyId, vapiCallId, slot, jobType, address, cu
   await applySmsConsent(supabase, companyId, customerId, smsConsent);
 
   const jobTypeRow = await getJobType(supabase, companyId, jobType);
+  const callbackWindowDays = await getCallbackWindowDays(supabase, companyId);
+  const callbackSource = await findRecentCallbackSource(supabase, companyId, {
+    customerId,
+    jobTypeId: jobTypeRow?.id,
+    address,
+    windowDays: callbackWindowDays,
+  });
 
   // jobs_no_double_booking_idx (migration 048) is the real guard against
   // two concurrent calls booking the same slot - the SELECT check above
@@ -327,14 +385,24 @@ async function createBooking({ companyId, vapiCallId, slot, jobType, address, cu
         company_id: companyId,
         customer_id: customerId,
         job_type_id: jobTypeRow?.id || null,
-        description: jobTypeRow?.label || jobType,
+        description: callbackSource
+          ? `${jobTypeRow?.label || jobType} - possible warranty callback, needs owner review (original job ${callbackSource.id.slice(0, 8)})`
+          : jobTypeRow?.label || jobType,
         address,
         urgency,
         status: "unassigned",
         scheduled_date: resolved?.date || null,
         scheduled_window: resolved?.window || slot,
-        price_low: call?.quote_low ?? null,
-        price_high: call?.quote_high ?? null,
+        // A possible warranty callback on recent work of the same type is
+        // NOT auto-billed - it's booked at $0 and flagged for the owner to
+        // make the charge decision (callback_needs_review), rather than
+        // silently becoming a normal paid job. See findRecentCallbackSource.
+        price_low: callbackSource ? 0 : call?.quote_low ?? null,
+        price_high: callbackSource ? 0 : call?.quote_high ?? null,
+        is_callback: Boolean(callbackSource),
+        original_job_id: callbackSource?.id || null,
+        callback_waived: Boolean(callbackSource),
+        callback_needs_review: Boolean(callbackSource),
         source: "phone_ai",
         call_id: call?.id || null,
       })
@@ -361,7 +429,48 @@ async function createBooking({ companyId, vapiCallId, slot, jobType, address, cu
     }
   }
 
+  // A possible warranty callback is routed to the owner for a manual
+  // charge decision - drop a CRM note so it surfaces in the interaction
+  // feed alongside the "needs review" flag on the job/board. Non-fatal.
+  if (callbackSource && customerId) {
+    try {
+      await supabase.from("customer_interactions").insert({
+        company_id: companyId,
+        customer_id: customerId,
+        type: "call",
+        body: `Possible warranty callback: same job type as a job completed within the last ${callbackWindowDays} days (original job ${callbackSource.id.slice(0, 8)}). Booked at no charge and flagged for your review - decide whether to bill before the visit.`,
+      });
+    } catch (err) {
+      console.error("logging callback-review note failed (non-fatal):", err.message);
+    }
+  }
+
   return { ok: true, job };
 }
 
-module.exports = { recordQuote, createBooking, applySmsConsent, findOrCreateLeadForCall, escalateToHuman };
+/**
+ * Logs a mid-call technical failure (a tool threw) as a lead needing a
+ * human callback, the same way escalateToHuman does for "outside Alex's
+ * scope" cases - except this is "Alex tried and the system broke," so the
+ * caller isn't left with a booking that silently never happened. Never
+ * throws - this is itself a failure-handling path; it must not compound
+ * the outage it's reporting on.
+ */
+async function logSystemErrorForFollowup({ companyId, vapiCallId, customerPhone, toolName, supabaseClient }) {
+  const supabase = supabaseClient || getSupabase();
+  try {
+    const customerId = await findOrCreateLeadForCall({ companyId, vapiCallId, customerPhone, supabaseClient: supabase });
+    if (customerId) {
+      await supabase.from("customer_interactions").insert({
+        company_id: companyId,
+        customer_id: customerId,
+        type: "call",
+        body: `Alex hit a technical error mid-call (${toolName}) and couldn't finish. Needs a callback to complete their booking/quote.`,
+      });
+    }
+  } catch (err) {
+    console.error("logSystemErrorForFollowup failed (non-fatal):", err.message);
+  }
+}
+
+module.exports = { recordQuote, createBooking, applySmsConsent, findOrCreateLeadForCall, escalateToHuman, logSystemErrorForFollowup };

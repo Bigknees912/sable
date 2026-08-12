@@ -27,8 +27,30 @@ class FakeQueryBuilder {
     this.filters.push({ type: "neq", col, val });
     return this;
   }
+  gte(col, val) {
+    this.filters.push({ type: "gte", col, val });
+    return this;
+  }
   in(col, vals) {
     this.filters.push({ type: "in", col, val: vals });
+    return this;
+  }
+  // Supports the subset used in booking.js: "col.eq.val,col2.eq.val2"
+  // meaning (col = val) OR (col2 = val2).
+  or(expr) {
+    const clauses = String(expr).split(",").map((c) => {
+      const [col, op, ...rest] = c.split(".");
+      return { col, op, val: rest.join(".") };
+    });
+    this.filters.push({ type: "or", clauses });
+    return this;
+  }
+  order(col, opts) {
+    this._order = { col, ascending: opts?.ascending !== false };
+    return this;
+  }
+  limit(n) {
+    this._limit = n;
     return this;
   }
   select() {
@@ -46,8 +68,10 @@ class FakeQueryBuilder {
 
   _matches(row) {
     return this.filters.every((f) => {
+      if (f.type === "or") return f.clauses.some((c) => c.op === "eq" && String(row[c.col]) === String(c.val));
       if (f.type === "eq") return row[f.col] === f.val;
       if (f.type === "neq") return row[f.col] !== f.val;
+      if (f.type === "gte") return row[f.col] >= f.val;
       if (f.type === "in") return f.val.includes(row[f.col]);
       return true;
     });
@@ -55,7 +79,12 @@ class FakeQueryBuilder {
 
   _execute() {
     if (this.op === "select") {
-      const rows = this.table.rows.filter((r) => this._matches(r));
+      let rows = this.table.rows.filter((r) => this._matches(r));
+      if (this._order) {
+        const { col, ascending } = this._order;
+        rows = [...rows].sort((a, b) => (a[col] > b[col] ? 1 : a[col] < b[col] ? -1 : 0) * (ascending ? 1 : -1));
+      }
+      if (typeof this._limit === "number") rows = rows.slice(0, this._limit);
       if (this._single) {
         return rows.length === 1 ? { data: rows[0], error: null } : { data: null, error: { message: "not exactly one row" } };
       }

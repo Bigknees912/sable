@@ -305,3 +305,109 @@ test("createBooking: a caller who never got a prior quote (no vapiCallId) books 
   assert.equal(result.ok, true);
   assert.equal(fake.table("estimates").rows.length, 0);
 });
+
+test("createBooking: a callback on the same job type within 30 days is waived, not re-quoted", async () => {
+  const recentlyCompleted = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString();
+  const fake = createFakeSupabase({
+    customers: [{ id: "cust-callback", company_id: COMPANY_ID, phone: "+15551112222", name: "Repeat Caller" }],
+    job_types: [{ id: "jt-drain", company_id: COMPANY_ID, key: "drain", label: "Drain Cleaning", active: true }],
+    jobs: [
+      {
+        id: "original-job-1",
+        company_id: COMPANY_ID,
+        customer_id: "cust-callback",
+        job_type_id: "jt-drain",
+        status: "done",
+        completed_at: recentlyCompleted,
+        assigned_tech_id: "tech-1",
+      },
+    ],
+  });
+  const slot = buildCandidates("standard")[0];
+
+  const result = await createBooking({
+    companyId: COMPANY_ID,
+    slot: slot.label,
+    jobType: "drain",
+    address: "1 Callback Ln",
+    customerPhone: "+15551112222",
+    customerName: "Repeat Caller",
+    supabaseClient: fake,
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.job.is_callback, true);
+  assert.equal(result.job.original_job_id, "original-job-1");
+  assert.equal(result.job.callback_waived, true);
+  assert.equal(result.job.price_low, 0);
+  assert.equal(result.job.price_high, 0);
+  assert.match(result.job.description, /callback/i);
+});
+
+test("createBooking: the same job type more than 30 days after completion is a fresh, billable job", async () => {
+  const longAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+  const fake = createFakeSupabase({
+    customers: [{ id: "cust-stale", company_id: COMPANY_ID, phone: "+15553334444", name: "Old Customer" }],
+    job_types: [{ id: "jt-drain-2", company_id: COMPANY_ID, key: "drain", label: "Drain Cleaning", active: true }],
+    jobs: [
+      {
+        id: "old-job-1",
+        company_id: COMPANY_ID,
+        customer_id: "cust-stale",
+        job_type_id: "jt-drain-2",
+        status: "done",
+        completed_at: longAgo,
+      },
+    ],
+  });
+  const slot = buildCandidates("standard")[0];
+
+  const result = await createBooking({
+    companyId: COMPANY_ID,
+    slot: slot.label,
+    jobType: "drain",
+    address: "2 Stale Ln",
+    customerPhone: "+15553334444",
+    customerName: "Old Customer",
+    supabaseClient: fake,
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.job.is_callback, false);
+  assert.equal(result.job.original_job_id, null);
+});
+
+test("createBooking: a different job type for the same customer doesn't get treated as a callback", async () => {
+  const recentlyCompleted = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+  const fake = createFakeSupabase({
+    customers: [{ id: "cust-diff", company_id: COMPANY_ID, phone: "+15555556666", name: "Multi Job Customer" }],
+    job_types: [
+      { id: "jt-drain-3", company_id: COMPANY_ID, key: "drain", label: "Drain Cleaning", active: true },
+      { id: "jt-faucet-3", company_id: COMPANY_ID, key: "faucet", label: "Faucet Repair", active: true },
+    ],
+    jobs: [
+      {
+        id: "prior-drain-job",
+        company_id: COMPANY_ID,
+        customer_id: "cust-diff",
+        job_type_id: "jt-drain-3",
+        status: "done",
+        completed_at: recentlyCompleted,
+      },
+    ],
+  });
+  const slot = buildCandidates("standard")[0];
+
+  const result = await createBooking({
+    companyId: COMPANY_ID,
+    slot: slot.label,
+    jobType: "faucet",
+    address: "3 Different Job Ln",
+    customerPhone: "+15555556666",
+    customerName: "Multi Job Customer",
+    supabaseClient: fake,
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.job.is_callback, false);
+});

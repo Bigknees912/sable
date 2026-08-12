@@ -1,5 +1,5 @@
 {
-  "name": "mayfield-ai-receptionist",
+  "name": "sable-ai-receptionist",
   "version": "1.0.0",
   "description": "Webhook server powering the Vapi AI phone receptionist for any trade business",
   "main": "server.js",

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Plus, X, Zap, Pencil, Trash2 } from 'lucide-react'
+import { useEscapeToClose } from './useEscapeToClose'
 import {
   listAutomations, createAutomation, updateAutomation, deleteAutomation, describeAutomation,
   TRIGGER_TYPES, JOB_STATUSES, ACTION_TYPES, SMS_VARIABLES,
@@ -133,6 +134,7 @@ function minutesToParts(minutes) {
 }
 
 function AutomationFormModal({ automation, onClose, onSaved }) {
+  useEscapeToClose(onClose)
   const isEdit = !!automation
   const initialDelay = minutesToParts(automation?.delay_minutes || 0)
 
@@ -196,11 +198,11 @@ function AutomationFormModal({ automation, onClose, onSaved }) {
       <div style={{ background: LIGHT.card, borderRadius: 20, padding: 20, maxWidth: 420, width: '100%', maxHeight: '88vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
           <div style={{ fontSize: 15, fontWeight: 700, color: LIGHT.ink }}>{isEdit ? 'Edit Winback Rule' : 'New Winback Rule'}</div>
-          <button className="tap" onClick={onClose}><X size={18} color={LIGHT.sub} /></button>
+          <button type="button" className="tap" onClick={onClose} aria-label="Close"><X size={18} color={LIGHT.sub} aria-hidden="true" /></button>
         </div>
 
-        <FieldLabel>Name</FieldLabel>
-        <TextInput value={name} onChange={setName} placeholder="Ask for a Google review" />
+        <FieldLabel htmlFor="field-name-2">Name</FieldLabel>
+        <TextInput id="field-name-2" value={name} onChange={setName} placeholder="Ask for a Google review" />
 
         <FieldLabel>When...</FieldLabel>
         <Select value={triggerType} onChange={setTriggerType} options={TRIGGER_TYPES.map((t) => ({ value: t.key, label: t.label }))} />

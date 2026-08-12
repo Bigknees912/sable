@@ -8,14 +8,15 @@
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
   :root {
-    --bg: #F5F4ED; --card: #FFFFFF; --ink: #1F1E1D; --sub: #83807A;
-    --border: #E5E1D8; --accent: #DA7756; --accent-soft: #F3E3DB; --gold: #E0A94E;
+    --bg: #F5F4ED; --card: #FFFFFF; --ink: #1F1E1D; --sub: #6B6964;
+    --border: #E5E1D8; --accent: #94513A; --accent-soft: #F3E3DB; --gold: #E0A94E;
     --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
   }
   @media (prefers-color-scheme: dark) {
     :root { --bg: #262624; --card: #302F2C; --ink: #F0EEE8; --sub: #A39E92; --border: #3D3B37; --accent: #E08D6B; --accent-soft: #3A2E27; --gold: #C99544; }
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
   body { font-family: 'Inter', sans-serif; color: var(--ink); background: var(--bg); }
   h1, h2 { font-family: 'Oswald', sans-serif; font-weight: 600; }
   a { color: var(--accent); transition: opacity 0.25s var(--ease-smooth); }
@@ -165,7 +166,7 @@
 
       <h2>12. Contact us</h2>
       <p>Questions about these Terms? Email us at
-      <a href="mailto:hello@sable.example">hello@sable.example</a>.</p>
+      <a href="mailto:hello@runsable.com">hello@runsable.com</a>.</p>
     </div>
   </div>
 </main>

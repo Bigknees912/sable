@@ -16,8 +16,8 @@ export default function LoginScreen({ onSignup, onForgotPassword }) {
   return (
     <AuthShell>
       <div style={{ textAlign: 'center', marginBottom: 32 }}>
-        <div style={{ width: 56, height: 56, borderRadius: 16, background: LIGHT.accent, margin: '0 auto 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#fff', fontSize: 22 }}>M</div>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: LIGHT.ink, margin: '0 0 4px 0' }}>Welcome to Mayfield</h1>
+        <div style={{ width: 56, height: 56, borderRadius: 16, background: LIGHT.accent, margin: '0 auto 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#fff', fontSize: 22 }}>S</div>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: LIGHT.ink, margin: '0 0 4px 0' }}>Welcome to Sable</h1>
         <div style={{ fontSize: 14, color: LIGHT.sub }}>Sign in to your dashboard</div>
       </div>
       <div style={{ background: LIGHT.card, borderRadius: 20, padding: 24, boxShadow: '0 1px 2px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06)' }}>
@@ -26,20 +26,20 @@ export default function LoginScreen({ onSignup, onForgotPassword }) {
         </button>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '18px 0' }}><div style={{ flex: 1, height: 1, background: LIGHT.border }} /><span style={{ fontSize: 12, color: LIGHT.sub }}>or</span><div style={{ flex: 1, height: 1, background: LIGHT.border }} /></div>
 
-        <FieldLabel>Email</FieldLabel>
-        <TextInput value={email} onChange={setEmail} placeholder="you@company.com" type="email" autoComplete="email" />
-        <FieldLabel>Password</FieldLabel>
-        <TextInput value={password} onChange={setPassword} placeholder="••••••••" type="password" autoComplete="current-password" />
+        <FieldLabel htmlFor="field-email-4">Email</FieldLabel>
+        <TextInput id="field-email-4" value={email} onChange={setEmail} placeholder="you@company.com" type="email" autoComplete="email" />
+        <FieldLabel htmlFor="field-password-3">Password</FieldLabel>
+        <TextInput id="field-password-3" value={password} onChange={setPassword} placeholder="••••••••" type="password" autoComplete="current-password" />
         <ErrorText>{error}</ErrorText>
         <PrimaryButton onClick={submit} disabled={loading || !email || !password}>
           {loading ? 'Signing in…' : 'Sign In'}
         </PrimaryButton>
         <div style={{ textAlign: 'center', marginTop: 14 }}>
-          <span className="tap" onClick={onForgotPassword} style={{ fontSize: 12.5, color: LIGHT.sub }}>Forgot password?</span>
+          <button type="button" className="tap" onClick={onForgotPassword} style={{ fontSize: 12.5, color: LIGHT.sub }}>Forgot password?</button>
         </div>
       </div>
       <div style={{ textAlign: 'center', marginTop: 20, fontSize: 13, color: LIGHT.sub }}>
-        New here? <span className="tap" onClick={onSignup} style={{ color: LIGHT.accent, fontWeight: 700 }}>Create an account</span>
+        New here? <button type="button" className="tap" onClick={onSignup} style={{ color: LIGHT.accent, fontWeight: 700, display: 'inline' }}>Create an account</button>
       </div>
     </AuthShell>
   )

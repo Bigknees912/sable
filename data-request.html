@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' fonts.googleapis.com; font-src fonts.gstatic.com; img-src 'self' data:; script-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self'">
-<title>Privacy Request — Mayfield Plumbing & Drain</title>
+<title>Privacy Request — Sable Plumbing & Drain</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
   :root {
@@ -12,6 +12,7 @@
     --copper-bright: #E08544; --steel: #5C6B78; --line: #E1E6E9; --success: #2F7A5C; --alert: #BF4C3C;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px; border-radius: 4px; }
   body { font-family: 'Inter', sans-serif; color: var(--ink); background: var(--mist); }
   h1, h2 { font-family: 'Oswald', sans-serif; font-weight: 600; }
   a { color: var(--copper); }
@@ -60,7 +61,7 @@
 
 <header>
   <div class="wrap">
-    <div class="logo"><span class="dot"></span> Mayfield Plumbing &amp; Drain</div>
+    <div class="logo"><span class="dot"></span> Sable Plumbing &amp; Drain</div>
     <a href="marketing-site.html" class="back">← Back to site</a>
   </div>
 </header>
@@ -74,18 +75,20 @@
 
     <div class="card">
       <form id="requestForm">
-        <label>What would you like to do?</label>
-        <div class="radio-row">
-          <label class="radio-opt active" data-type="access">
-            <input type="radio" name="requestType" value="access" checked> See my data
-          </label>
-          <label class="radio-opt" data-type="correction">
-            <input type="radio" name="requestType" value="correction"> Correct it
-          </label>
-          <label class="radio-opt" data-type="deletion">
-            <input type="radio" name="requestType" value="deletion"> Delete it
-          </label>
-        </div>
+        <fieldset style="border: none; padding: 0; margin: 0;">
+          <legend style="display: block; font-size: 12px; font-weight: 700; color: var(--steel); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; margin-top: 16px; padding: 0;">What would you like to do?</legend>
+          <div class="radio-row">
+            <label class="radio-opt active" data-type="access">
+              <input type="radio" name="requestType" value="access" checked> See my data
+            </label>
+            <label class="radio-opt" data-type="correction">
+              <input type="radio" name="requestType" value="correction"> Correct it
+            </label>
+            <label class="radio-opt" data-type="deletion">
+              <input type="radio" name="requestType" value="deletion"> Delete it
+            </label>
+          </div>
+        </fieldset>
 
         <label for="dr-name">Your full name</label>
         <input type="text" id="dr-name" required>
@@ -97,7 +100,7 @@
         <input type="tel" id="dr-phone" placeholder="The number we may have on file for you">
 
         <label for="dr-company">Which business is this about?</label>
-        <input type="text" id="dr-company" value="Mayfield Plumbing &amp; Drain">
+        <input type="text" id="dr-company" value="Sable Plumbing &amp; Drain">
 
         <label for="dr-details">Anything else that helps us find your record</label>
         <textarea id="dr-details" placeholder="e.g. approximate date of service, address on file..."></textarea>
@@ -127,7 +130,7 @@
       <a href="privacy.html">Privacy Policy</a>
       <a href="data-request.html">My Data / Privacy Requests</a>
     </div>
-    <div>© 2026 Mayfield Plumbing &amp; Drain</div>
+    <div>© 2026 Sable Plumbing &amp; Drain</div>
   </div>
 </footer>
 
@@ -181,7 +184,7 @@
         body: JSON.stringify(body),
       });
       const data = await resp.json();
-      if (!resp.ok) throw new Error(data.error || 'Something went wrong. Please try again or email privacy@mayfieldplumbing.example directly.');
+      if (!resp.ok) throw new Error(data.error || 'Something went wrong. Please try again or email privacy@sableplumbing.example directly.');
 
       form.style.display = 'none';
       successEl.classList.add('show');

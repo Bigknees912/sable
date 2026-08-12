@@ -127,29 +127,29 @@ function PlanCard({ plan, isNew, onMoveUp, onMoveDown, onSaved, onCancel }) {
       <div style={{ display: 'flex', gap: 10, marginBottom: 4 }}>
         {!isNew && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2, paddingTop: 2 }}>
-            <button className="tap" disabled={!onMoveUp} onClick={onMoveUp} style={{ opacity: onMoveUp ? 1 : 0.3 }}><ChevronUp size={15} color={LIGHT.sub} /></button>
-            <button className="tap" disabled={!onMoveDown} onClick={onMoveDown} style={{ opacity: onMoveDown ? 1 : 0.3 }}><ChevronDown size={15} color={LIGHT.sub} /></button>
+            <button type="button" className="tap" disabled={!onMoveUp} onClick={onMoveUp} aria-label="Move plan up" style={{ opacity: onMoveUp ? 1 : 0.3 }}><ChevronUp size={15} color={LIGHT.sub} aria-hidden="true" /></button>
+            <button type="button" className="tap" disabled={!onMoveDown} onClick={onMoveDown} aria-label="Move plan down" style={{ opacity: onMoveDown ? 1 : 0.3 }}><ChevronDown size={15} color={LIGHT.sub} aria-hidden="true" /></button>
           </div>
         )}
         <div style={{ flex: 1 }}>
           <div style={{ display: 'grid', gridTemplateColumns: isNew ? 'repeat(4, 1fr)' : 'repeat(3, 1fr)', gap: 10, marginBottom: 10 }}>
             {isNew && (
               <div>
-                <FieldLabel>Key</FieldLabel>
-                <TextInput value={key} onChange={setKey} placeholder="enterprise" />
+                <FieldLabel htmlFor="field-key-1">Key</FieldLabel>
+                <TextInput id="field-key-1" value={key} onChange={setKey} placeholder="enterprise" />
               </div>
             )}
             <div>
-              <FieldLabel>Name</FieldLabel>
-              <TextInput value={name} onChange={setName} placeholder="Enterprise" />
+              <FieldLabel htmlFor="field-name-1">Name</FieldLabel>
+              <TextInput id="field-name-1" value={name} onChange={setName} placeholder="Enterprise" />
             </div>
             <div>
-              <FieldLabel>Monthly price ($)</FieldLabel>
-              <TextInput value={price} onChange={setPrice} placeholder="299" />
+              <FieldLabel htmlFor="field-monthly-price-1">Monthly price ($)</FieldLabel>
+              <TextInput id="field-monthly-price-1" value={price} onChange={setPrice} placeholder="299" />
             </div>
             <div>
-              <FieldLabel>Seat limit (blank = unlimited)</FieldLabel>
-              <TextInput value={seatLimit} onChange={setSeatLimit} placeholder="e.g. 10" />
+              <FieldLabel htmlFor="field-seat-limit-blank-unlimited-1">Seat limit (blank = unlimited)</FieldLabel>
+              <TextInput id="field-seat-limit-blank-unlimited-1" value={seatLimit} onChange={setSeatLimit} placeholder="e.g. 10" />
             </div>
           </div>
           <div style={{ fontSize: 11, color: LIGHT.sub, marginTop: -6, marginBottom: 10 }}>
@@ -230,8 +230,8 @@ function CompanyOverrideEditor() {
 
   return (
     <div style={{ background: LIGHT.card, borderRadius: 16, padding: 18, boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
-      <FieldLabel>Company</FieldLabel>
-      <select value={companyId} onChange={(e) => setCompanyId(e.target.value)} style={{ width: '100%', background: '#F5F5F7', border: `1px solid ${LIGHT.border}`, borderRadius: 10, fontSize: 14, padding: '11px 13px', marginBottom: 14, color: LIGHT.ink }}>
+      <FieldLabel htmlFor="field-override-company">Company</FieldLabel>
+      <select id="field-override-company" value={companyId} onChange={(e) => setCompanyId(e.target.value)} style={{ width: '100%', background: '#F5F5F7', border: `1px solid ${LIGHT.border}`, borderRadius: 10, fontSize: 14, padding: '11px 13px', marginBottom: 14, color: LIGHT.ink }}>
         <option value="">Select a company…</option>
         {companies?.map((c) => <option key={c.id} value={c.id}>{c.name} ({c.plan || 'no plan'})</option>)}
       </select>
@@ -241,10 +241,10 @@ function CompanyOverrideEditor() {
           <div style={{ fontSize: 12, color: LIGHT.sub, marginBottom: 12 }}>
             Standard {detail.plan} price: {money(standardPrice ?? 0)}/mo. Leave the override blank to bill the standard tier price.
           </div>
-          <FieldLabel>Override monthly price ($, blank = no override)</FieldLabel>
-          <TextInput value={overridePrice} onChange={setOverridePrice} placeholder="e.g. 29.00" />
-          <FieldLabel>Note (reason for the discount/deal)</FieldLabel>
-          <TextInput value={note} onChange={setNote} placeholder="Early customer discount, locked for 1 year" />
+          <FieldLabel htmlFor="field-override-monthly-price-blank-no-override-1">Override monthly price ($, blank = no override)</FieldLabel>
+          <TextInput id="field-override-monthly-price-blank-no-override-1" value={overridePrice} onChange={setOverridePrice} placeholder="e.g. 29.00" />
+          <FieldLabel htmlFor="field-note-reason-for-the-discount-deal-1">Note (reason for the discount/deal)</FieldLabel>
+          <TextInput id="field-note-reason-for-the-discount-deal-1" value={note} onChange={setNote} placeholder="Early customer discount, locked for 1 year" />
           <ErrorText>{error}</ErrorText>
           {saved && <div style={{ fontSize: 12, color: LIGHT.success, marginBottom: 10 }}>Saved.</div>}
           <PrimaryButton onClick={save} disabled={loading}>{loading ? 'Saving…' : 'Save Override'}</PrimaryButton>

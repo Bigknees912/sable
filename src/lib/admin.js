@@ -14,9 +14,22 @@ export async function isSuperAdmin() {
 }
 
 export async function listCompanies() {
-  const { data, error } = await supabase.rpc('admin_list_companies')
+  // Merge the main listing with the cancellation signal (migration 068) so
+  // the panel can show a chosen-to-leave account ("Cancelling") distinct
+  // from a non-payment "Suspended". Both are super-admin-gated RPCs.
+  const [{ data, error }, cancellations] = await Promise.all([
+    supabase.rpc('admin_list_companies'),
+    supabase.rpc('admin_company_cancellations').then((r) => (r.error ? [] : r.data || [])),
+  ])
   if (error) throw error
-  return data
+  const cancelByCompany = {}
+  for (const c of cancellations) cancelByCompany[c.company_id] = c
+  return (data || []).map((c) => {
+    const cx = cancelByCompany[c.id]
+    return cx
+      ? { ...c, cancel_at_period_end: cx.cancel_at_period_end, cancellation_reason: cx.cancellation_reason, cancellation_period_end: cx.current_period_end }
+      : c
+  })
 }
 
 export async function getCompanyDetail(companyId) {

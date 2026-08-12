@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Home, KanbanSquare, Calendar, BookUser, Zap, ClipboardList, Receipt, Users, BarChart3, Settings as SettingsIcon, LogOut, Bell } from 'lucide-react'
+import { Home, KanbanSquare, Calendar, BookUser, Zap, ClipboardList, Receipt, Users, BarChart3, Settings as SettingsIcon, LogOut, Bell, Radar } from 'lucide-react'
 import { LIGHT } from '../theme'
 import { GlobalStyle } from '../auth/ui'
 import { ErrorBanner } from './ui'
@@ -19,12 +19,14 @@ import TeamPage from './TeamPage'
 import AnalyticsPage from './AnalyticsPage'
 import SettingsPage from './SettingsPage'
 import TechHome from './TechHome'
+import MapPage from './MapPage'
 import NotificationCenterModal from './NotificationCenterModal'
 import LocationSwitcher from './LocationSwitcher'
 
 const OWNER_TABS = [
   { id: 'home', label: 'Home', icon: Home },
   { id: 'jobs', label: 'Jobs', icon: KanbanSquare },
+  { id: 'map', label: 'Map', icon: Radar },
   { id: 'estimates', label: 'Estimates', icon: Receipt },
   { id: 'calendar', label: 'Calendar', icon: Calendar },
   { id: 'clients', label: 'Clients', icon: BookUser },
@@ -44,6 +46,7 @@ const TECH_TABS = [
 const OFFICE_ADMIN_TABS = [
   { id: 'home', label: 'Home', icon: Home },
   { id: 'jobs', label: 'Jobs', icon: KanbanSquare },
+  { id: 'map', label: 'Map', icon: Radar },
   { id: 'calendar', label: 'Calendar', icon: Calendar },
   { id: 'clients', label: 'Clients', icon: BookUser },
 ]
@@ -128,7 +131,7 @@ export default function AppShell({ session, profile, onSignOut }) {
               <TradeIcon size={17} color={LIGHT.accent} />
             </div>
             <div>
-              <div style={{ fontSize: 17, fontWeight: 700, color: LIGHT.ink }}>{company?.name || 'Mayfield'}</div>
+              <div style={{ fontSize: 17, fontWeight: 700, color: LIGHT.ink }}>{company?.name || 'Sable'}</div>
               <div style={{ fontSize: 12, color: LIGHT.sub }}>{profile.name} · {ROLE_LABEL[profile.role] || 'Technician'}</div>
             </div>
           </div>
@@ -146,16 +149,17 @@ export default function AppShell({ session, profile, onSignOut }) {
                 )}
               </button>
             )}
-            <button className="tap" onClick={handleSignOut} disabled={signingOut} style={{ width: 36, height: 36, borderRadius: 18, background: LIGHT.card, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
-              <LogOut size={16} color={LIGHT.ink} />
+            <button type="button" className="tap" onClick={handleSignOut} disabled={signingOut} aria-label="Sign out" style={{ width: 36, height: 36, borderRadius: 18, background: LIGHT.card, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
+              <LogOut size={16} color={LIGHT.ink} aria-hidden="true" />
             </button>
           </div>
         </div>
         <ErrorBanner message={signOutError} onDismiss={() => setSignOutError('')} />
 
         {tab === 'home' && canManageOfficeTabs && <OwnerHome businessProfile={company} locations={isOwner ? locations : []} />}
-        {tab === 'home' && !canManageOfficeTabs && <TechHome techId={session.user.id} />}
+        {tab === 'home' && !canManageOfficeTabs && <TechHome techId={session.user.id} company={company} />}
         {tab === 'jobs' && canManageOfficeTabs && <JobsBoard company={company} locationId={selectedLocationId} />}
+        {tab === 'map' && canManageOfficeTabs && <MapPage company={company} />}
         {tab === 'estimates' && isOwner && <EstimatesPage company={company} />}
         {tab === 'calendar' && <CalendarPage myTechId={canManageOfficeTabs ? null : session.user.id} locationId={canManageOfficeTabs ? selectedLocationId : null} />}
         {tab === 'clients' && canManageOfficeTabs && <ClientsPage company={company} />}

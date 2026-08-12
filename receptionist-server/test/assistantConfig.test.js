@@ -32,7 +32,7 @@ test("buildAssistantConfig: an electrician's config never mentions plumbing term
 
 test("buildAssistantConfig: a plumber's config never mentions electrical terms", () => {
   const config = buildAssistantConfig({
-    company: { name: "Mayfield Plumbing & Drain", trade: "Plumbing", service_area: "Calgary" },
+    company: { name: "Sable Plumbing & Drain", trade: "Plumbing", service_area: "Calgary" },
     jobTypes: PLUMBING_JOB_TYPES,
     webhookUrl: "https://example.com/vapi/webhook",
   });
@@ -106,4 +106,26 @@ test("buildAssistantConfig: throws with an empty service catalog instead of gene
     () => buildAssistantConfig({ company: { name: "Empty Co", trade: "Plumbing" }, jobTypes: [], webhookUrl: "https://example.com" }),
     /empty service catalog/
   );
+});
+
+test("buildAssistantConfig: sets call-behavior settings so the assistant yields when talked over", () => {
+  const config = buildAssistantConfig({
+    company: { name: "Test Co", trade: "Plumbing" },
+    jobTypes: [{ key: "drain", label: "Drain Cleaning" }],
+    webhookUrl: "https://example.com/vapi/webhook",
+  });
+  assert.ok(config.startSpeakingPlan.waitSeconds > 0, "should wait before assuming the caller is done talking");
+  assert.ok(config.stopSpeakingPlan.numWords <= 3, "should let the caller interrupt after only a couple words");
+  assert.equal(config.backgroundDenoisingEnabled, true);
+});
+
+test("buildAssistantConfig: prompt tells Alex to read back the address/phone and check in on silence", () => {
+  const config = buildAssistantConfig({
+    company: { name: "Test Co", trade: "Plumbing" },
+    jobTypes: [{ key: "drain", label: "Drain Cleaning" }],
+    webhookUrl: "https://example.com/vapi/webhook",
+  });
+  const prompt = config.model.systemPrompt.toLowerCase();
+  assert.ok(prompt.includes("confirm") && prompt.includes("address"), "should confirm the address back to the caller");
+  assert.ok(prompt.includes("still there"), "should check in once before assuming a dropped call");
 });

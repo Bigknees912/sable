@@ -106,6 +106,29 @@ export async function listTeamTechs({ locationId } = {}) {
   return data
 }
 
+// Per-tech callback rate from the tech_callback_rates view (migrations
+// 064/067): completed jobs vs. how many of a tech's jobs turned out to be
+// warranty callbacks - a real per-person quality signal for the owner.
+// Returns a map keyed by tech id: { completed, callbacks }.
+export async function listTechCallbackRates() {
+  const { data, error } = await supabase
+    .from('tech_callback_rates')
+    .select('tech_id, completed_jobs, callback_jobs')
+  if (error) throw error
+  const map = {}
+  for (const r of data || []) map[r.tech_id] = { completed: r.completed_jobs || 0, callbacks: r.callback_jobs || 0 }
+  return map
+}
+
+// Wraps owner_remove_team_member (migration 062). Revokes the profile's
+// access to this company (nulls company_id/location_id server-side) and
+// unassigns their open jobs - see the migration for why this doesn't
+// delete the underlying auth account.
+export async function removeTeamMember(profileId) {
+  const { error } = await supabase.rpc('owner_remove_team_member', { p_profile_id: profileId })
+  if (error) throw error
+}
+
 // Keyed by tech_id. lat/lng live on tech_locations, not profiles - there's
 // no GPS pipeline populating this yet, so it'll be an empty map in
 // practice until a mobile app starts upserting positions.

@@ -37,10 +37,32 @@ export default function App() {
   const [selectedPlan, setSelectedPlan] = useState('starter')
   const [passwordRecovery, setPasswordRecovery] = useState(false)
 
+  // getSession() alone only reads whatever's in this browser's local
+  // storage - it does not by itself prove the token is still valid on the
+  // server. That distinction matters here specifically: a valid,
+  // *current* session is the whole security boundary between one user's
+  // dashboard and anyone else who might have this URL (there's no
+  // per-user path or query param - the URL is identical for every user).
+  // So on every load we don't just trust a locally-cached session object;
+  // we call getUser(), which round-trips to Supabase and verifies the
+  // access token against the server. If that fails - expired, revoked, or
+  // simply absent, e.g. someone else opening a copied dashboard URL with no
+  // session of their own - we treat it exactly like being signed out.
   function loadSession() {
     setSessionError('')
     supabase.auth.getSession()
-      .then(({ data }) => setSession(data.session))
+      .then(async ({ data }) => {
+        if (!data.session) {
+          setSession(null)
+          return
+        }
+        const { data: userData, error: userError } = await supabase.auth.getUser()
+        if (userError || !userData.user) {
+          setSession(null)
+          return
+        }
+        setSession(data.session)
+      })
       .catch((err) => setSessionError(err.message || String(err)))
   }
 
@@ -201,7 +223,7 @@ function SuspendedScreen({ onSignOut }) {
       <div style={{ paddingTop: 40, textAlign: 'center' }}>
         <div style={{ fontSize: 18, fontWeight: 700, color: LIGHT.ink, marginBottom: 10 }}>Account access paused</div>
         <div style={{ fontSize: 13.5, color: LIGHT.sub, marginBottom: 24, lineHeight: 1.5 }}>
-          Your workspace's access has been paused by Mayfield support. Your data is safe and nothing has been
+          Your workspace's access has been paused by Sable support. Your data is safe and nothing has been
           deleted - reach out to support to get this resolved.
         </div>
         <button

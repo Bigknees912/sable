@@ -1,12 +1,24 @@
 <!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' fonts.googleapis.com; font-src fonts.gstatic.com; img-src 'self' data:; script-src 'self' 'unsafe-inline'; connect-src 'self' https://api.anthropic.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'">
+<title>Try the Demo — Sable</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
   :root {
     --ink: #1C2530; --ink2: #232E3B; --paper: #F3EFE4; --line: #D8D0BC;
-    --copper: #B8703F; --copperBright: #D68C4E; --slate: #5B6B7A;
+    --copper: #9C5C32; --copperBright: #D68C4E; --slate: #5B6B7A;
+    /* --slate only passes AA (4.5:1) against the light --paper ticket
+       background (~5.4:1) - against the dark --ink/--ink2 phone UI it
+       measures ~2.5:1, badly failing. --slate-light is the same muted role
+       tuned for that dark context instead of reusing one color for both. */
+    --slate-light: #9BA9B8;
     --success: #3F7A5C; --alert: #C1440E;
   }
   * { box-sizing: border-box; }
+  a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--copperBright); outline-offset: 2px; border-radius: 4px; }
   body { margin: 0; }
   .wrap { min-height: 100%; background: var(--ink); font-family: 'Inter', sans-serif; padding: 32px 20px; }
   .grid { max-width: 980px; margin: 0 auto; display: grid; grid-template-columns: 1.05fr 1fr; gap: 24px; }
@@ -18,15 +30,15 @@
   .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); animation: pulse 1.6s infinite; }
   @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
   .caller-name { color: var(--paper); font-size: 14px; font-weight: 600; }
-  .caller-num { color: var(--slate); font-size: 11.5px; font-family: 'IBM Plex Mono', monospace; }
-  .timer { color: var(--slate); font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; }
+  .caller-num { color: var(--slate-light); font-size: 11.5px; font-family: 'IBM Plex Mono', monospace; }
+  .timer { color: var(--slate-light); font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; }
   .transcript { flex: 1; overflow-y: auto; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; }
   .bubble { max-width: 82%; padding: 10px 13px; border-radius: 10px; font-size: 13.5px; line-height: 1.45; }
   .bubble.ai { background: #2C3947; color: #DCE3E9; align-self: flex-start; border-bottom-left-radius: 2px; }
   .bubble.ai .who { color: var(--copperBright); font-size: 10.5px; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 3px; }
   .bubble.caller { background: var(--copper); color: #FBF3EA; align-self: flex-end; border-bottom-right-radius: 2px; }
-  .bubble.caller .who { color: #F6D9BE; font-size: 10.5px; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 3px; }
-  .status-row { color: var(--slate); font-size: 12px; font-style: italic; padding: 0 18px 8px 18px; min-height: 16px; }
+  .bubble.caller .who { color: #FFF3E8; font-size: 10.5px; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 3px; }
+  .status-row { color: var(--slate-light); font-size: 12px; font-style: italic; padding: 0 18px 8px 18px; min-height: 16px; }
 
   .mic-area { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 16px 18px 18px 18px; border-top: 1px solid #33404F; }
   .mic-btn {
@@ -40,7 +52,7 @@
   .mic-btn:disabled { opacity: 0.5; cursor: default; }
   @keyframes micpulse { 0% { box-shadow: 0 0 0 0 rgba(193,68,14,0.5); } 70% { box-shadow: 0 0 0 14px rgba(193,68,14,0); } 100% { box-shadow: 0 0 0 0 rgba(193,68,14,0); } }
   .mic-label { color: var(--paper); font-size: 12.5px; font-weight: 600; }
-  .hint { color: #55626F; font-size: 11px; text-align: center; }
+  .hint { color: var(--slate-light); font-size: 11px; text-align: center; }
   .fallback-note { background: #3A2A1A; border: 1px solid var(--copper); border-radius: 8px; padding: 12px 14px; color: var(--paper); font-size: 12.5px; line-height: 1.5; margin: 0 18px 14px 18px; }
 
   .ticket { background: var(--paper); border-radius: 6px; overflow: hidden; align-self: start; }
@@ -52,19 +64,34 @@
   .field-row { display: flex; justify-content: space-between; padding: 7px 0; font-size: 13px; border-bottom: 1px dashed var(--line); }
   .field-row .k { color: var(--slate); }
   .field-row .v { color: var(--ink); font-weight: 600; font-family: 'IBM Plex Mono', monospace; }
-  .v.pending { color: #B7AE98; font-weight: 500; }
+  .v.pending { color: #655F50; font-weight: 500; }
   .total-label { font-family: 'Oswald', sans-serif; font-size: 13px; color: var(--ink); letter-spacing: 0.5px; margin-top: 16px; }
   .total-value { font-family: 'IBM Plex Mono', monospace; font-size: 30px; font-weight: 600; color: var(--ink); margin: 4px 0 4px 0; }
   .total-sub { font-size: 11.5px; color: var(--slate); margin-bottom: 4px; }
   .empty-ticket { text-align: center; color: var(--slate); font-size: 13px; padding: 50px 0; line-height: 1.6; }
-  .footer-note { max-width: 980px; margin: 20px auto 0 auto; font-size: 11.5px; color: #4E5A67; font-family: 'IBM Plex Mono', monospace; }
+  .footer-note { max-width: 980px; margin: 20px auto 0 auto; font-size: 11.5px; color: var(--slate-light); font-family: 'IBM Plex Mono', monospace; }
+  .back-link { display: inline-flex; align-items: center; gap: 6px; color: var(--slate-light); font-size: 12.5px; text-decoration: none; margin-bottom: 18px; }
+  .back-link:hover { color: var(--paper); }
 </style>
+</head>
+<body>
 
 <div class="wrap">
   <div class="grid">
     <div>
-      <div class="eyebrow">MAYFIELD PLUMBING &amp; DRAIN — VOICE CALL SIMULATOR</div>
+      <a class="back-link" href="home.html">&larr; Back to Sable</a>
+      <div class="eyebrow" id="eyebrow">VOICE CALL SIMULATOR</div>
       <h1>Talk to Alex, For Real</h1>
+      <div style="margin-bottom:16px;">
+        <label for="tradeSelect" style="display:block;color:var(--slate-light);font-size:11px;letter-spacing:1px;margin-bottom:6px;font-family:'IBM Plex Mono',monospace;">SEE IT FOR YOUR TRADE</label>
+        <select id="tradeSelect" style="width:100%;max-width:280px;background:var(--ink2);border:1px solid #33404F;color:var(--paper);border-radius:6px;padding:9px 10px;font-size:13.5px;font-family:'Inter',sans-serif;">
+          <option value="plumbing">Plumbing</option>
+          <option value="electrical">Electrical</option>
+          <option value="hvac">HVAC</option>
+          <option value="roofing">Roofing</option>
+          <option value="locksmith">Locksmith</option>
+        </select>
+      </div>
       <div class="phone">
         <div class="phone-header">
           <div class="caller-info">
@@ -79,8 +106,8 @@
           Your browser doesn't support voice input (this needs Chrome or Edge, on desktop or Android). Safari and Firefox aren't supported yet. You can still type below.
         </div>
         <div class="mic-area">
-          <button class="mic-btn" id="micBtn">
-            <svg id="micIcon" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+          <button class="mic-btn" id="micBtn" aria-label="Talk to Alex" aria-describedby="micLabel">
+            <svg id="micIcon" aria-hidden="true" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
           </button>
           <div class="mic-label" id="micLabel">Tap to talk</div>
           <div class="hint">Try: "Hi, my basement drain is backed up and it's flooding"</div>
@@ -101,14 +128,79 @@
 </div>
 
 <script>
-  const JOB_TYPES = {
-    drain:       { label: "Drain Cleaning",              baseFee: 149, hours: 1,   hourly: 135, parts: 0   },
-    faucet:      { label: "Faucet Repair / Install",     baseFee: 149, hours: 1.5, hourly: 135, parts: 80  },
-    toilet:      { label: "Toilet Repair / Install",     baseFee: 149, hours: 1.5, hourly: 135, parts: 120 },
-    waterheater: { label: "Water Heater Install / Repair",baseFee: 149, hours: 3,   hourly: 145, parts: 950 },
-    pipeleak:    { label: "Pipe Repair / Leak",          baseFee: 149, hours: 2,   hourly: 145, parts: 150 },
-    sump:        { label: "Sump Pump",                   baseFee: 149, hours: 2.5, hourly: 145, parts: 400 },
+  // One catalog per trade, not just plumbing - each entry supplies its own
+  // company name, job types (for pricing + the enum Alex is told to use),
+  // and emergency cues (what Alex should treat as urgent without asking),
+  // mirroring receptionist-server/lib/assistantConfig.js's real per-company,
+  // per-trade prompt generation. Switching the dropdown below fully resets
+  // the call so a client can see their own trade, not a plumbing demo with
+  // different labels bolted on.
+  const TRADES = {
+    plumbing: {
+      companyName: "Sable Plumbing & Drain",
+      tradeLabel: "plumbing",
+      emergencyCues: "flooding, a burst pipe, sewage backup, or no water at all",
+      jobTypes: {
+        drain:       { label: "Drain Cleaning",               baseFee: 149, hours: 1,   hourly: 135, parts: 0   },
+        faucet:      { label: "Faucet Repair / Install",      baseFee: 149, hours: 1.5, hourly: 135, parts: 80  },
+        toilet:      { label: "Toilet Repair / Install",      baseFee: 149, hours: 1.5, hourly: 135, parts: 120 },
+        waterheater: { label: "Water Heater Install / Repair",baseFee: 149, hours: 3,   hourly: 145, parts: 950 },
+        pipeleak:    { label: "Pipe Repair / Leak",           baseFee: 149, hours: 2,   hourly: 145, parts: 150 },
+        sump:        { label: "Sump Pump",                    baseFee: 149, hours: 2.5, hourly: 145, parts: 400 },
+      },
+    },
+    electrical: {
+      companyName: "Sable Electric",
+      tradeLabel: "electrical",
+      emergencyCues: "sparking, a burning smell, exposed wires, a total power outage, or any shock risk",
+      jobTypes: {
+        panel:     { label: "Panel Repair / Upgrade",  baseFee: 129, hours: 3,   hourly: 145, parts: 400 },
+        outlet:    { label: "Outlet / Switch Install", baseFee: 129, hours: 1,   hourly: 135, parts: 40  },
+        lighting:  { label: "Lighting Install",        baseFee: 129, hours: 1.5, hourly: 135, parts: 90  },
+        evcharger: { label: "EV Charger Install",      baseFee: 129, hours: 4,   hourly: 150, parts: 650 },
+        wiring:    { label: "Rewiring / Troubleshoot", baseFee: 129, hours: 2,   hourly: 145, parts: 60  },
+      },
+    },
+    hvac: {
+      companyName: "Sable Heating & Air",
+      tradeLabel: "HVAC",
+      emergencyCues: "no heat in freezing weather, no AC in extreme heat, or a gas smell",
+      jobTypes: {
+        furnace:  { label: "Furnace Repair / Install", baseFee: 139, hours: 3,   hourly: 140, parts: 700 },
+        ac:       { label: "AC Repair / Install",      baseFee: 139, hours: 3,   hourly: 140, parts: 650 },
+        thermo:   { label: "Thermostat Install",       baseFee: 139, hours: 1,   hourly: 130, parts: 120 },
+        duct:     { label: "Duct Cleaning / Repair",   baseFee: 139, hours: 2,   hourly: 135, parts: 100 },
+        maint:    { label: "Maintenance Tune-Up",      baseFee: 139, hours: 1.5, hourly: 130, parts: 30  },
+      },
+    },
+    roofing: {
+      companyName: "Sable Roofing",
+      tradeLabel: "roofing",
+      emergencyCues: "an active leak during a storm, or visible structural damage",
+      jobTypes: {
+        leak:    { label: "Leak Repair",             baseFee: 159, hours: 2,   hourly: 130, parts: 150 },
+        shingle: { label: "Shingle Repair / Replace", baseFee: 159, hours: 3,   hourly: 130, parts: 400 },
+        inspect: { label: "Roof Inspection",          baseFee: 159, hours: 1,   hourly: 120, parts: 0   },
+        gutter:  { label: "Gutter Repair / Install",  baseFee: 159, hours: 2,   hourly: 125, parts: 220 },
+      },
+    },
+    locksmith: {
+      companyName: "Sable Locksmith",
+      tradeLabel: "locksmith",
+      emergencyCues: "someone locked out with no safe way back in, or a break-in/compromised lock",
+      jobTypes: {
+        lockout: { label: "Lockout / Re-Entry",    baseFee: 89,  hours: 0.5, hourly: 120, parts: 0   },
+        rekey:   { label: "Lock Rekey / Replace",  baseFee: 89,  hours: 1,   hourly: 120, parts: 60  },
+        install: { label: "New Lock Install",      baseFee: 89,  hours: 1,   hourly: 120, parts: 90  },
+        car:     { label: "Car Lockout",           baseFee: 89,  hours: 0.5, hourly: 125, parts: 0   },
+      },
+    },
   };
+
+  let currentTrade = "plumbing";
+  function trade() { return TRADES[currentTrade]; }
+  function JOB_TYPES() { return trade().jobTypes; }
+
   const URGENCY = {
     standard:  { label: "Standard",  mult: 1 },
     sameday:   { label: "Same-Day",  mult: 1.25 },
@@ -179,7 +271,7 @@
 
   function renderTicket() {
     const f = state.fields;
-    const job = f.jobType ? JOB_TYPES[f.jobType] : null;
+    const job = f.jobType ? JOB_TYPES()[f.jobType] : null;
     const content = document.getElementById("ticketContent");
     if (!job && !f.property && !f.urgency && !f.address && !state.escalated) {
       content.innerHTML = '<div class="empty-ticket">Start the call on the left.<br/>Alex fills this in as the caller talks.</div>';
@@ -232,7 +324,9 @@
   }
 
   function buildSystemPrompt() {
-    let base = `You are Alex, the AI phone receptionist for Mayfield Plumbing & Drain, a plumbing company in Calgary, Alberta. You are on a live phone call with a customer.
+    const t = trade();
+    const jobKeys = Object.keys(t.jobTypes).join(", ");
+    let base = `You are Alex, the AI phone receptionist for ${t.companyName}, a ${t.tradeLabel} company in Calgary, Alberta. You are on a live phone call with a customer.
 
 This is a real phone call, not a chat. Nobody stays on the line for a paragraph. Follow these rules strictly:
 - One short sentence per turn. Two only if absolutely necessary.
@@ -242,9 +336,9 @@ This is a real phone call, not a chat. Nobody stays on the line for a paragraph.
 - Your reply will be spoken aloud by text-to-speech, so avoid anything that reads oddly out loud: no bullet points, no symbols, no parentheses.
 
 Your job is to figure out:
-- jobType: one of [drain, faucet, toilet, waterheater, pipeleak, sump] based on what the caller describes
+- jobType: one of [${jobKeys}] based on what the caller describes
 - property: "residential" or "commercial"
-- urgency: "standard", "sameday", or "emergency" (infer emergency automatically from flooding, burst pipes, sewage, no heat in freezing weather)
+- urgency: "standard", "sameday", or "emergency" (infer emergency automatically from ${t.emergencyCues}, without asking)
 - address: the caller's full street address in Calgary, ask plainly, never ask for a city quadrant
 - partsTier: "basic", "mid", or "premium" if mentioned, otherwise leave null
 - bookingSlot: the day/time the caller agrees to, once offered
@@ -255,7 +349,11 @@ When the caller rambles, over-explains, or drifts off-topic: let them finish the
 
 When the caller corrects themselves mid-sentence or contradicts something they said a moment ago ("actually it's not the kitchen sink, it's the bathroom one"), always keep their most recent statement, not their first one, for whichever field it affects. Confirm the correction in passing rather than restarting the question. If two statements genuinely conflict and you can't tell which is current, ask one direct clarifying question naming both options instead of guessing.
 
-If the caller asks about something you have no way to help with - a billing dispute, a complaint about past work, a completely unrelated trade - don't guess an answer. Say in one short line that you'll have someone call them back about that specifically, and set fields.escalate to true with fields.escalateReason set to a short phrase describing it. Keep helping with any real plumbing job in the same call after that.`;
+Once you have an address, read it back in your own words before moving on, so a mishearing gets caught early: "Just to confirm, that's [address] - is that right?" Do this once per call, not for every field.
+
+Warmth matters as much as speed. If the caller sounds stressed about a real emergency, acknowledge it briefly ("that's not fun, let's get someone out there") before your next question - don't just barrel through like a form. After booking, close with a short, genuine line like "we'll take care of you" rather than ending abruptly.
+
+If the caller asks about something you have no way to help with - a billing dispute, a complaint about past work, a completely unrelated trade - don't guess an answer. Say in one short line that you'll have someone call them back about that specifically, and set fields.escalate to true with fields.escalateReason set to a short phrase describing it. Keep helping with any real ${t.tradeLabel} job in the same call after that.`;
 
     if (state.quoted) {
       const slots = nextAvailableSlots(state.fields.urgency || "standard");
@@ -373,11 +471,41 @@ Only include non-null values you're confident about. Never overwrite a known fie
     try { recognizer.start(); } catch (e) { /* already started */ }
   });
 
+  function updateEyebrow() {
+    document.getElementById("eyebrow").textContent = trade().companyName.toUpperCase() + " — VOICE CALL SIMULATOR";
+  }
+
   // Opening greeting
-  setTimeout(() => speakAndShowGreeting(), 300);
   function speakAndShowGreeting() {
-    const greeting = "Mayfield Plumbing, this is Alex. What's going on?";
+    const greeting = `${trade().companyName}, this is Alex. What's going on?`;
     addBubble("Alex", greeting);
     speak(greeting);
   }
+
+  // Switching trades mid-demo starts the call over: the whole point is
+  // letting a client see their own trade, not a plumbing call with
+  // relabeled job types layered on top of leftover state.
+  document.getElementById("tradeSelect").addEventListener("change", (e) => {
+    currentTrade = e.target.value;
+    window.speechSynthesis.cancel();
+    if (recognizing && recognizer) recognizer.stop();
+    state.fields = { jobType: null, urgency: null, property: null, partsTier: null, address: null, bookingSlot: null };
+    state.history = [];
+    state.quoted = false;
+    state.booked = false;
+    state.escalated = false;
+    state.escalateReason = null;
+    BUSY_SLOTS.clear();
+    transcriptEl.innerHTML = "";
+    updateEyebrow();
+    renderTicket();
+    setStatus("");
+    micBtn.disabled = false;
+    setTimeout(() => speakAndShowGreeting(), 200);
+  });
+
+  updateEyebrow();
+  setTimeout(() => speakAndShowGreeting(), 300);
 </script>
+</body>
+</html>

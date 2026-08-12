@@ -40,8 +40,8 @@ export default function ForgotPasswordScreen({ onBack }) {
       <h1 style={{ fontSize: 20, fontWeight: 700, color: LIGHT.ink, marginBottom: 8 }}>Reset your password</h1>
       <div style={{ fontSize: 13.5, color: LIGHT.sub, marginBottom: 20 }}>We'll email you a link to set a new one.</div>
       <div style={{ background: LIGHT.card, borderRadius: 20, padding: 22, boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
-        <FieldLabel>Email</FieldLabel>
-        <TextInput value={email} onChange={setEmail} placeholder="you@company.com" type="email" autoComplete="email" />
+        <FieldLabel htmlFor="field-email-3">Email</FieldLabel>
+        <TextInput id="field-email-3" value={email} onChange={setEmail} placeholder="you@company.com" type="email" autoComplete="email" />
         <ErrorText>{error}</ErrorText>
         <PrimaryButton onClick={submit} disabled={loading || !email}>
           {loading ? 'Sending…' : 'Send Reset Link'}
