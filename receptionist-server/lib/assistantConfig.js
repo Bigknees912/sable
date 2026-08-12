@@ -94,9 +94,26 @@ function buildAssistantConfig({ company, jobTypes, webhookUrl, variant = "a" }) 
       model: "claude-sonnet-4-6",
       systemPrompt: buildSystemPrompt({ company, jobTypes }),
     },
+    // Until now this block set only a provider and a voice id, so every
+    // expressiveness knob fell through to the provider default. ElevenLabs
+    // defaults to high stability, which flattens the micro-variation in pitch
+    // and pace that makes a voice read as human - that is the usual cause of
+    // "it sounds like a bot," and no amount of system-prompt warmth fixes it,
+    // because the prompt controls word choice and these control delivery.
     voice: {
       provider: "11labs",
       voiceId: "REPLACE_WITH_YOUR_CHOSEN_VOICE_ID",
+      // Turbo v2.5 is the streaming model: phone audio is 8kHz anyway, so the
+      // extra fidelity of a non-streaming model buys nothing and costs latency.
+      model: "eleven_turbo_v2_5",
+      // Low stability = more emotional range. Pushed below the 0.5 default on
+      // purpose; go lower for more life, higher if a voice starts wandering.
+      stability: 0.45,
+      similarity_boost: 0.78,
+      // Slight style exaggeration for warmth. Past ~0.6 it distorts, and it
+      // costs latency, so this stays deliberately low.
+      style: 0.2,
+      useSpeakerBoost: true,
     },
     // "Puts up with the customer talking": Vapi's call-behavior knobs, not
     // prompt text - no system prompt can fix an assistant that barges in on
